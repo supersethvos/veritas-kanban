@@ -113,12 +113,55 @@ const RunTokensEventSchema = BaseEventSchema.extend({
   model: z.string().optional(),
 });
 
+// ============ VOS Signal Event Schemas ============
+
+/** Base fields for VOS signal events (taskId optional — signals are system-level) */
+const SignalBaseSchema = z.object({
+  taskId: z.string().optional(),
+  project: z.string().optional(),
+  timestamp: z.string().datetime().optional(),
+  agent: z.string().min(1, 'agent is required'),
+  severity: z.string().min(1, 'severity is required'),
+  summary: z.string().min(1, 'summary is required'),
+  venture: z.string().optional(),
+  payload: z.record(z.unknown()).optional(),
+});
+
+/** signal.health event payload */
+const SignalHealthEventSchema = SignalBaseSchema.extend({
+  type: z.literal('signal.health'),
+  healthClass: z.string().min(1, 'healthClass is required'),
+});
+
+/** signal.completion event payload */
+const SignalCompletionEventSchema = SignalBaseSchema.extend({
+  type: z.literal('signal.completion'),
+  classification: z.string().min(1, 'classification is required'),
+  missingSurfaces: z.array(z.string()).optional(),
+});
+
+/** signal.dispatch_blocked event payload */
+const SignalDispatchBlockedEventSchema = SignalBaseSchema.extend({
+  type: z.literal('signal.dispatch_blocked'),
+  antiPatterns: z.array(z.string()).optional(),
+});
+
+/** signal.generic event payload (catch-all for unmapped VOS event types) */
+const SignalGenericEventSchema = SignalBaseSchema.extend({
+  type: z.literal('signal.generic'),
+  vosEventType: z.string().min(1, 'vosEventType is required'),
+});
+
 /** Discriminated union of all valid event types for ingestion */
 export const TelemetryEventIngestionSchema = z.discriminatedUnion('type', [
   RunStartedEventSchema,
   RunCompletedEventSchema,
   RunErrorEventSchema,
   RunTokensEventSchema,
+  SignalHealthEventSchema,
+  SignalCompletionEventSchema,
+  SignalDispatchBlockedEventSchema,
+  SignalGenericEventSchema,
 ]);
 
 export type TelemetryEventIngestion = z.infer<typeof TelemetryEventIngestionSchema>;

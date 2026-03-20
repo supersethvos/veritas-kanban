@@ -1,12 +1,13 @@
 /**
  * Agent Registry API Routes
  *
- * POST   /api/agents/register          — Register or update an agent
- * POST   /api/agents/register/:id/heartbeat — Send heartbeat
- * DELETE /api/agents/register/:id       — Deregister an agent
- * GET    /api/agents/register           — List all registered agents
- * GET    /api/agents/register/:id       — Get specific agent
- * GET    /api/agents/register/stats     — Get registry statistics
+ * POST   /api/agents/register                 — Register or update an agent
+ * POST   /api/agents/register/:id/heartbeat   — Send heartbeat
+ * DELETE /api/agents/register/:id             — Deregister an agent
+ * GET    /api/agents/register                 — List all registered agents
+ * GET    /api/agents/register/known          — Get the canonical VOS roster
+ * GET    /api/agents/register/:id            — Get specific agent
+ * GET    /api/agents/register/stats          — Get registry statistics
  * GET    /api/agents/register/capabilities/:capability — Find agents by capability
  */
 
@@ -37,7 +38,7 @@ const registerSchema = z.object({
 });
 
 const heartbeatSchema = z.object({
-  status: z.enum(['online', 'busy', 'idle']).optional(),
+  status: z.enum(['online', 'busy', 'idle', 'offline', 'dormant']).optional(),
   currentTaskId: z.string().max(100).optional().nullable(),
   currentTaskTitle: z.string().max(200).optional().nullable(),
   metadata: z.record(z.string(), z.unknown()).optional(),
@@ -54,6 +55,18 @@ router.get(
   asyncHandler(async (_req, res) => {
     const registry = getAgentRegistryService();
     res.json(registry.stats());
+  })
+);
+
+/**
+ * GET /api/agents/register/known
+ * Get the canonical VOS roster in stable order.
+ */
+router.get(
+  '/known',
+  asyncHandler(async (_req, res) => {
+    const registry = getAgentRegistryService();
+    res.json(registry.listKnownAgents());
   })
 );
 
@@ -149,17 +162,18 @@ router.post(
 
 /**
  * DELETE /api/agents/register/:id
- * Deregister an agent
+ * Deregister an agent. Known VOS agents remain visible as offline roster entries.
  */
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
     const registry = getAgentRegistryService();
-    const removed = registry.deregister(req.params.id as string);
+    const agentId = req.params.id as string;
+    const removed = registry.deregister(agentId);
     if (!removed) {
       throw new NotFoundError('Agent not found');
     }
-    res.json({ removed: true });
+    res.json({ removed: true, retainedAsKnownAgent: registry.isKnownAgent(agentId) });
   })
 );
 

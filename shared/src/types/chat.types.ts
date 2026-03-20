@@ -38,6 +38,8 @@ export interface ChatSendInput {
   agent?: string; // Override agent
   model?: string; // Override model
   mode?: 'ask' | 'build';
+  /** Thinking level hint for the gateway: lower = faster, higher = deeper */
+  thinkingLevel?: 'low' | 'medium' | 'high' | 'xhigh';
 }
 
 /**

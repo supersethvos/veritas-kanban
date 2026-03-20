@@ -153,6 +153,15 @@ export interface TaskGitHub {
   repo: string;
 }
 
+export interface TaskAutomation {
+  sessionKey?: string; // RUN_ID truth for delegated execution
+  ackAt?: string; // ACK truth for the delegated worker
+  eta?: string; // ETA truth for the next milestone
+  spawnedAt?: string; // When sub-agent was spawned
+  completedAt?: string; // When sub-agent finished
+  result?: string; // Result summary from sub-agent
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -175,6 +184,9 @@ export interface Task {
 
   // GitHub Issue cross-reference
   github?: TaskGitHub;
+
+  // Delegation handoff plan truth
+  plan?: string;
 
   // Current attempt
   attempt?: TaskAttempt;
@@ -211,12 +223,7 @@ export interface Task {
   blockedReason?: BlockedReason;
 
   // Automation task specific (for veritas sub-agent)
-  automation?: {
-    sessionKey?: string; // Clawdbot session key
-    spawnedAt?: string; // When sub-agent was spawned
-    completedAt?: string; // When sub-agent finished
-    result?: string; // Result summary from sub-agent
-  };
+  automation?: TaskAutomation;
 
   // Time tracking
   timeTracking?: TimeTracking;
@@ -292,6 +299,7 @@ export interface CreateTaskInput {
   sprint?: string;
   agent?: AgentType | 'auto'; // Pre-assign an agent (or "auto" for routing engine)
   agents?: AgentType[]; // Multi-agent assignment
+  plan?: string; // Delegation handoff plan truth
   subtasks?: Subtask[]; // Can be provided when creating from a template
   blockedBy?: string[]; // Can be provided when creating from a blueprint
   reviewScores?: [number, number, number, number]; // Optional 4x10 scores
@@ -310,6 +318,7 @@ export interface UpdateTaskInput {
   agents?: AgentType[];
   git?: Partial<TaskGit>;
   github?: TaskGitHub;
+  plan?: string;
   attempt?: TaskAttempt;
   reviewComments?: ReviewComment[];
   reviewScores?: [number, number, number, number];
@@ -323,12 +332,7 @@ export interface UpdateTaskInput {
   };
   blockedBy?: string[];
   blockedReason?: BlockedReason | null; // null to clear
-  automation?: {
-    sessionKey?: string;
-    spawnedAt?: string;
-    completedAt?: string;
-    result?: string;
-  };
+  automation?: TaskAutomation;
   timeTracking?: TimeTracking;
   comments?: Comment[];
   observations?: Observation[];

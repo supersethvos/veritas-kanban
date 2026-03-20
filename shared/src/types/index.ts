@@ -1,4 +1,4 @@
-// Barrel file - re-exports all types from domain-specific files
+// Barrel file - re-exports all shared domain types, including founder-surface autonomy and agent-certification contracts.
 
 export * from './task.types.js';
 export * from './config.types.js';
@@ -14,3 +14,4 @@ export * from './broadcast.types.js';
 export * from './agent-registry.types.js';
 export * from './shared-resources.types.js';
 export * from './doc-freshness.types.js';
+export * from './founder-surface.types.js';

@@ -45,6 +45,8 @@ const createTaskSchema = z.object({
   agent: z.string().max(50).optional(), // "auto" | agent type slug
   reviewScores: reviewScoresSchema.optional(),
   reviewComments: z.array(reviewCommentSchema).optional(),
+  blockedBy: z.array(z.string()).optional(),
+  plan: z.string().optional(),
 });
 
 const gitSchema = z
@@ -69,6 +71,8 @@ const attemptSchema = z
 const automationSchema = z
   .object({
     sessionKey: z.string().optional(),
+    ackAt: z.string().optional(),
+    eta: z.string().optional(),
     spawnedAt: z.string().optional(),
     completedAt: z.string().optional(),
     result: z.string().optional(),
@@ -122,6 +126,24 @@ const subtaskSchema = z.object({
   criteriaChecked: z.array(z.boolean()).optional(),
 });
 
+const verificationStepSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  checked: z.boolean(),
+  checkedAt: z.string().optional(),
+});
+
+const deliverableSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: z.enum(['document', 'code', 'report', 'artifact', 'other']),
+  path: z.string().optional(),
+  status: z.enum(['pending', 'attached', 'reviewed', 'accepted']),
+  agent: z.string().max(50).optional(),
+  created: z.string(),
+  description: z.string().optional(),
+});
+
 const githubSchema = z
   .object({
     issueNumber: z.number().int().positive(),
@@ -146,10 +168,24 @@ const updateTaskSchema = z.object({
   review: reviewStateSchema.optional(),
   subtasks: z.array(subtaskSchema).optional(),
   autoCompleteOnSubtasks: z.boolean().optional(),
+  verificationSteps: z.array(verificationStepSchema).optional(),
   blockedBy: z.array(z.string()).optional(),
   blockedReason: blockedReasonSchema,
   plan: z.string().optional(),
   automation: automationSchema,
+  observations: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.enum(['decision', 'blocker', 'insight', 'context']),
+        content: z.string(),
+        score: z.number(),
+        timestamp: z.string(),
+        agent: z.string().max(50).optional(),
+      })
+    )
+    .optional(),
+  deliverables: z.array(deliverableSchema).optional(),
   position: z.number().optional(),
 });
 
@@ -649,6 +685,13 @@ router.patch(
     const oldTask = await taskService.getTask(req.params.id as string);
     if (!oldTask) {
       throw new NotFoundError('Task not found');
+    }
+
+    if (input.automation) {
+      input.automation = {
+        ...oldTask.automation,
+        ...input.automation,
+      };
     }
 
     // Check delegation if moving to 'done'

@@ -180,6 +180,27 @@ describe('Tasks Routes (actual module)', () => {
       expect(res.body.id).toBe('t1');
     });
 
+    it('should forward plan truth on task creation', async () => {
+      const newTask = {
+        id: 't1',
+        title: 'New Task',
+        type: 'code',
+        priority: 'medium',
+        plan: '1. ACK\n2. Build\n3. Verify',
+        created: '2025-01-01',
+      };
+      mockTaskService.createTask.mockResolvedValue(newTask);
+
+      const res = await request(app)
+        .post('/api/tasks')
+        .send({ title: 'New Task', plan: '1. ACK\n2. Build\n3. Verify' });
+
+      expect(res.status).toBe(201);
+      expect(mockTaskService.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({ plan: '1. ACK\n2. Build\n3. Verify' })
+      );
+    });
+
     it('should reject missing title', async () => {
       const res = await request(app).post('/api/tasks').send({});
       expect(res.status).toBe(400);
@@ -271,6 +292,50 @@ describe('Tasks Routes (actual module)', () => {
       expect(mockTaskService.updateTask).toHaveBeenCalledWith(
         't1',
         expect.objectContaining({ blockedReason: null })
+      );
+    });
+
+    it('should merge handoff automation fields without dropping the run id truth', async () => {
+      const oldTask = {
+        id: 't1',
+        status: 'in-progress',
+        title: 'Task',
+        automation: {
+          sessionKey: 'agent:maya:subagent:abc123',
+          spawnedAt: '2026-03-17T08:00:00.000Z',
+        },
+      };
+      const updatedTask = {
+        ...oldTask,
+        automation: {
+          ...oldTask.automation,
+          ackAt: '2026-03-17T08:01:00.000Z',
+          eta: 'next checkpoint in 15m',
+        },
+      };
+      mockTaskService.getTask.mockResolvedValue(oldTask);
+      mockTaskService.updateTask.mockResolvedValue(updatedTask);
+
+      const res = await request(app)
+        .patch('/api/tasks/t1')
+        .send({
+          automation: {
+            ackAt: '2026-03-17T08:01:00.000Z',
+            eta: 'next checkpoint in 15m',
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(mockTaskService.updateTask).toHaveBeenCalledWith(
+        't1',
+        expect.objectContaining({
+          automation: {
+            sessionKey: 'agent:maya:subagent:abc123',
+            spawnedAt: '2026-03-17T08:00:00.000Z',
+            ackAt: '2026-03-17T08:01:00.000Z',
+            eta: 'next checkpoint in 15m',
+          },
+        })
       );
     });
 

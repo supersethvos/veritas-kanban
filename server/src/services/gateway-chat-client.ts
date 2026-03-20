@@ -11,10 +11,14 @@ import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('gateway-chat');
 
-const GATEWAY_URL = process.env.CLAWDBOT_GATEWAY || 'http://127.0.0.1:18789';
+import { env } from '../config/env.js';
+
+function getGatewayUrl(): string {
+  return env.CLAWDBOT_GATEWAY || 'http://127.0.0.1:18789';
+}
 const PROTOCOL_VERSION = 3;
 const CONNECT_TIMEOUT_MS = 10_000;
-const RESPONSE_TIMEOUT_MS = 120_000; // 2 minutes for AI response
+const RESPONSE_TIMEOUT_MS = 300_000; // 5 minutes for AI response (agents may chain multiple tool calls)
 
 // Cached token — populated lazily
 let cachedToken: string | null = null;
@@ -40,12 +44,18 @@ interface StreamCallbacks {
  * Send a message to the Clawdbot Gateway and collect the response.
  * Opens a temporary WebSocket connection for each request.
  */
+export interface GatewayChatOptions {
+  /** Thinking level hint for the gateway agent: 'low' | 'medium' | 'high' | 'xhigh' */
+  thinkingLevel?: string;
+}
+
 export async function sendGatewayChat(
   message: string,
   sessionKey: string,
-  callbacks?: StreamCallbacks
+  callbacks?: StreamCallbacks,
+  options?: GatewayChatOptions
 ): Promise<ChatResponse> {
-  const wsUrl = GATEWAY_URL.replace(/^http/, 'ws');
+  const wsUrl = getGatewayUrl().replace(/^http/, 'ws');
 
   return new Promise((resolve, reject) => {
     let connected = false;
@@ -108,6 +118,7 @@ export async function sendGatewayChat(
                 mode: 'backend',
               },
               auth: { token: getToken() },
+              scopes: ['operator.read', 'operator.write'],
             },
           })
         );
@@ -138,6 +149,7 @@ export async function sendGatewayChat(
               sessionKey,
               message,
               idempotencyKey: randomUUID(),
+              ...(options?.thinkingLevel ? { thinkingLevel: options.thinkingLevel } : {}),
             },
           })
         );
@@ -241,7 +253,8 @@ export async function sendGatewayChat(
 }
 
 /**
- * Load the gateway token from config file if not in env
+ * Load the gateway token from macOS Keychain (matching OpenClaw's secret provider),
+ * falling back to env var and legacy config file.
  */
 export async function loadGatewayToken(): Promise<string> {
   if (cachedToken) return cachedToken;
@@ -250,6 +263,24 @@ export async function loadGatewayToken(): Promise<string> {
     return cachedToken;
   }
 
+  // Try macOS Keychain (same source as openclaw.json gateway.auth.token)
+  try {
+    const { execFileSync } = await import('child_process');
+    const token = execFileSync(
+      '/usr/bin/security',
+      ['find-generic-password', '-s', 'openclaw', '-a', 'gateway-auth-token', '-w'],
+      { encoding: 'utf-8', timeout: 5000 }
+    ).trim();
+    if (token) {
+      cachedToken = token;
+      log.info('Gateway token loaded from macOS Keychain');
+      return token;
+    }
+  } catch {
+    log.debug('Gateway token not found in macOS Keychain, trying legacy config');
+  }
+
+  // Legacy fallback: ~/.clawdbot/clawdbot.json
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
@@ -259,12 +290,12 @@ export async function loadGatewayToken(): Promise<string> {
     const token = config?.gateway?.auth?.token;
     if (token) {
       cachedToken = token;
-      process.env.CLAWDBOT_GATEWAY_TOKEN = token;
       return token;
     }
-  } catch (err: any) {
-    log.warn({ err: err.message }, 'Failed to load gateway token from config');
+  } catch {
+    log.debug('Legacy gateway config not found');
   }
 
+  log.warn('No gateway token found — chat will fail with scope errors');
   return '';
 }

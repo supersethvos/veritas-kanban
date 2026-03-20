@@ -32,6 +32,15 @@ export type AgentCapability = BuiltInCapability | (string & {});
 /** Lifecycle status of a registered agent. */
 export type AgentLifecycleStatus = 'alive' | 'working' | 'idle' | 'error' | 'offline';
 
+/**
+ * Activity truth state — what the agent is actually doing, independent of transport health.
+ * - working: actively executing on a task
+ * - done_unnormalized: finished work but registry pointer not yet cleared (ghost state)
+ * - idle: no active work detected
+ * - offline: agent is not connected/reachable
+ */
+export type AgentActivityTruthState = 'working' | 'done_unnormalized' | 'idle' | 'offline';
+
 // ─── Registration ────────────────────────────────────────────────
 
 /** Payload an agent sends to register itself. */

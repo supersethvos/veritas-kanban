@@ -9,9 +9,11 @@
  */
 
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from '../storage/fs-helpers.js';
 import { createLogger } from '../lib/logger.js';
 import { getRuntimeDir } from '../utils/paths.js';
+import type { ControlPlaneNormalizationEvent } from '@veritas-kanban/shared';
 
 const log = createLogger('agent-registry');
 
@@ -40,7 +42,7 @@ export interface RegisteredAgent {
   /** Freeform metadata */
   metadata?: Record<string, unknown>;
   /** Current status */
-  status: 'online' | 'busy' | 'idle' | 'offline';
+  status: 'online' | 'busy' | 'idle' | 'offline' | 'dormant';
   /** ISO timestamp of registration */
   registeredAt: string;
   /** ISO timestamp of last heartbeat */
@@ -65,7 +67,7 @@ export interface AgentRegistration {
 }
 
 export interface AgentHeartbeat {
-  status?: 'online' | 'busy' | 'idle';
+  status?: 'online' | 'busy' | 'idle' | 'offline' | 'dormant';
   currentTaskId?: string;
   currentTaskTitle?: string;
   metadata?: Record<string, unknown>;
@@ -117,6 +119,19 @@ export interface TaskSyncSnapshot {
   agent?: string;
 }
 
+export interface AgentRegistryStats {
+  total: number;
+  online: number;
+  busy: number;
+  idle: number;
+  offline: number;
+  capabilities: string[];
+  knownAgentsTotal: number;
+  knownAgentsPresent: number;
+  missingKnownAgents: string[];
+  rosterComplete: boolean;
+}
+
 // ─── Configuration ───────────────────────────────────────────────
 
 /** How long before an agent is considered offline (no heartbeat) */
@@ -150,6 +165,154 @@ const MAX_RECONCILE_BATCH = 10_000;
 /** Basic ref validation for task-agent sync paths */
 const AGENT_REF_REGEX = /^[a-zA-Z0-9._: -]{1,100}$/;
 
+export const KNOWN_VOS_AGENT_IDS = [
+  'SETH-LEAD',
+  'MAYA',
+  'TAMMI',
+  'HONEY-BADGER',
+  'FINN',
+  'VEGA',
+  'ATLAS',
+  'ROUX',
+] as const;
+
+type KnownVosAgentId = (typeof KNOWN_VOS_AGENT_IDS)[number];
+
+type KnownVosAgentProfile = Required<
+  Pick<AgentRegistration, 'id' | 'name' | 'model' | 'provider' | 'version'>
+> & {
+  capabilities: AgentCapability[];
+  metadata: Record<string, unknown>;
+};
+
+const KNOWN_VOS_AGENT_PROFILES: Record<KnownVosAgentId, KnownVosAgentProfile> = {
+  'SETH-LEAD': {
+    id: 'SETH-LEAD',
+    name: 'SETH Lead',
+    model: 'openai-codex/gpt-5.4',
+    provider: 'openai-codex',
+    version: '1.0.0',
+    capabilities: [
+      { name: 'orchestration' },
+      { name: 'execution' },
+      { name: 'integration' },
+      { name: 'veritas-control-plane' },
+    ],
+    metadata: {
+      role: 'lead',
+      lane: '#lab-vos-system',
+      ventureScope: 'vos-core',
+      source: 'veritas-openclaw-bridge',
+      registrationMode: 'bridge-driven',
+    },
+  },
+  MAYA: {
+    id: 'MAYA',
+    name: 'MAYA',
+    model: 'claude-sonnet-4-6',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'engineering' }, { name: 'scaffolding' }, { name: 'automation' }],
+    metadata: {
+      role: 'engineering',
+      lane: '#eng-*',
+      ventureScope: 'vos-core',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  TAMMI: {
+    id: 'TAMMI',
+    name: 'TAMMI',
+    model: 'openai-codex/gpt-5.4',
+    provider: 'openai-codex',
+    version: '1.0.0',
+    capabilities: [{ name: 'ops' }, { name: 'reliability' }, { name: 'validation' }],
+    metadata: {
+      role: 'operations-controller',
+      lane: '#ops-tammi',
+      ventureScope: 'vos-core',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  'HONEY-BADGER': {
+    id: 'HONEY-BADGER',
+    name: 'Honey Badger',
+    model: 'claude-code/opus-4',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'security' }, { name: 'compliance' }, { name: 'audit' }],
+    metadata: {
+      role: 'security',
+      lane: '#sec-honeybadger',
+      ventureScope: 'multi-venture',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  FINN: {
+    id: 'FINN',
+    name: 'Finn',
+    model: 'claude-code/opus-4',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'finance' }, { name: 'treasury' }, { name: 'cost-analysis' }],
+    metadata: {
+      role: 'capital-ops',
+      lane: '#fin-finn',
+      ventureScope: 'multi-venture',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  VEGA: {
+    id: 'VEGA',
+    name: 'Vega',
+    model: 'claude-code/opus-4',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'growth' }, { name: 'marketing' }, { name: 'analytics' }],
+    metadata: {
+      role: 'growth',
+      lane: '#growth-vega',
+      ventureScope: 'multi-venture',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  ATLAS: {
+    id: 'ATLAS',
+    name: 'Atlas',
+    model: 'claude-code/opus-4',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'research' }, { name: 'intelligence' }, { name: 'data' }],
+    metadata: {
+      role: 'intelligence',
+      lane: '#intel-atlas',
+      ventureScope: 'multi-venture',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+  ROUX: {
+    id: 'ROUX',
+    name: 'Roux',
+    model: 'claude-code/opus-4',
+    provider: 'anthropic',
+    version: '1.0.0',
+    capabilities: [{ name: 'creative' }, { name: 'content' }, { name: 'copy' }],
+    metadata: {
+      role: 'creative',
+      lane: '#creative-roux',
+      ventureScope: 'klaviyo_ops',
+      source: 'canonical-vos-registry',
+      registrationMode: 'seeded-known-agent',
+    },
+  },
+};
+
 // ─── Service ─────────────────────────────────────────────────────
 
 class AgentRegistryService {
@@ -179,23 +342,36 @@ class AgentRegistryService {
    */
   register(registration: AgentRegistration): RegisteredAgent {
     const existing = this.agents.get(registration.id);
+    const canonical = this.isKnownAgent(registration.id)
+      ? KNOWN_VOS_AGENT_PROFILES[registration.id]
+      : null;
     const now = new Date().toISOString();
 
-    const agent: RegisteredAgent = {
+    const agent = this.sanitizeAgentState({
       id: registration.id,
-      name: registration.name,
-      model: registration.model ?? existing?.model,
-      provider: registration.provider ?? existing?.provider,
-      capabilities: registration.capabilities ?? existing?.capabilities ?? [],
-      version: registration.version ?? existing?.version,
-      metadata: registration.metadata ?? existing?.metadata,
+      name: canonical?.name ?? registration.name,
+      model: registration.model ?? existing?.model ?? canonical?.model,
+      provider: registration.provider ?? existing?.provider ?? canonical?.provider,
+      capabilities:
+        registration.capabilities ??
+        existing?.capabilities ??
+        canonical?.capabilities.map((capability) => ({ ...capability })) ??
+        [],
+      version: registration.version ?? existing?.version ?? canonical?.version,
+      metadata: canonical
+        ? {
+            ...canonical.metadata,
+            ...existing?.metadata,
+            ...registration.metadata,
+          }
+        : (registration.metadata ?? existing?.metadata),
       sessionKey: registration.sessionKey ?? existing?.sessionKey,
-      status: 'online',
+      status: existing?.status === 'busy' && existing.currentTaskId ? 'busy' : 'online',
       registeredAt: existing?.registeredAt ?? now,
       lastHeartbeat: now,
       currentTaskId: existing?.currentTaskId,
       currentTaskTitle: existing?.currentTaskTitle,
-    };
+    });
 
     this.agents.set(registration.id, agent);
     this.persist();
@@ -212,19 +388,63 @@ class AgentRegistryService {
    * Process a heartbeat from an agent.
    */
   heartbeat(agentId: string, update?: AgentHeartbeat): RegisteredAgent | null {
-    const agent = this.agents.get(agentId);
-    if (!agent) {
+    const current = this.agents.get(agentId);
+    if (!current) {
       return null;
     }
 
-    agent.lastHeartbeat = new Date().toISOString();
-    if (update?.status) agent.status = update.status;
-    if (update?.currentTaskId !== undefined)
-      agent.currentTaskId = update.currentTaskId || undefined;
-    if (update?.currentTaskTitle !== undefined)
-      agent.currentTaskTitle = update.currentTaskTitle || undefined;
-    if (update?.metadata) agent.metadata = { ...agent.metadata, ...update.metadata };
+    const next: RegisteredAgent = {
+      ...current,
+      lastHeartbeat: new Date().toISOString(),
+      status: update?.status ?? current.status,
+      metadata: update?.metadata ? { ...current.metadata, ...update.metadata } : current.metadata,
+      currentTaskId: current.currentTaskId,
+      currentTaskTitle: current.currentTaskTitle,
+    };
 
+    const requestedTaskId = update?.currentTaskId?.trim() || undefined;
+    const requestedTaskTitle = update?.currentTaskTitle?.trim() || undefined;
+    const wantsToClearTask = update?.currentTaskId !== undefined && !requestedTaskId;
+    const wantsToClearTitle = update?.currentTaskTitle !== undefined && !requestedTaskTitle;
+    const wantsIdleLikeStatus =
+      next.status === 'idle' || next.status === 'offline' || next.status === 'dormant';
+    // Protect task-sync truth against idle/dormant heartbeat noise (e.g. bridge
+    // sending empty string task fields), but allow explicit 'offline' heartbeats
+    // to clear state intentionally.
+    const preserveAuthoritativeTaskTruth =
+      (next.status === 'idle' || next.status === 'dormant') &&
+      current.status === 'busy' &&
+      Boolean(current.currentTaskId) &&
+      (update?.currentTaskId === undefined || wantsToClearTask) &&
+      (update?.currentTaskTitle === undefined || wantsToClearTitle);
+
+    if (requestedTaskId !== undefined) {
+      next.currentTaskId = requestedTaskId;
+    }
+    if (requestedTaskTitle !== undefined) {
+      next.currentTaskTitle = requestedTaskTitle;
+    }
+
+    if (preserveAuthoritativeTaskTruth) {
+      next.status = 'busy';
+      next.currentTaskId = current.currentTaskId;
+      next.currentTaskTitle = current.currentTaskTitle;
+    } else {
+      if (wantsIdleLikeStatus && update?.currentTaskId === undefined) {
+        next.currentTaskId = undefined;
+      }
+      if (wantsIdleLikeStatus && update?.currentTaskTitle === undefined) {
+        next.currentTaskTitle = undefined;
+      }
+      if (wantsIdleLikeStatus && wantsToClearTask) {
+        next.currentTaskId = undefined;
+      }
+      if (wantsIdleLikeStatus && wantsToClearTitle) {
+        next.currentTaskTitle = undefined;
+      }
+    }
+
+    const agent = this.sanitizeAgentState(next);
     this.agents.set(agentId, agent);
     this.persist();
 
@@ -236,7 +456,7 @@ class AgentRegistryService {
    *
    * Precedence contract:
    * - Task transition to in-progress is authoritative for busy + currentTask assignment.
-   * - Terminal transitions (todo/blocked/done/cancelled) move agent to idle + clear task,
+   * - Terminal transitions (todo/blocked/done/cancelled) clear ghost task pointers,
    *   but only when the agent is still attached to the same task (prevents clobbering
    *   if agent moved on to a different task).
    */
@@ -250,11 +470,15 @@ class AgentRegistryService {
       return null;
     }
 
-    const agent = this.findByRef(update.agentRef);
-    if (!agent) return null;
+    const current = this.findByRef(update.agentRef);
+    if (!current) return null;
 
-    const previousStatus = agent.status;
-    const previousTaskId = agent.currentTaskId;
+    const agent: RegisteredAgent = { ...current };
+    const previousState = JSON.stringify({
+      status: agent.status,
+      currentTaskId: agent.currentTaskId,
+      currentTaskTitle: agent.currentTaskTitle,
+    });
 
     if (update.taskStatus === 'in-progress') {
       agent.status = 'busy';
@@ -262,29 +486,57 @@ class AgentRegistryService {
       agent.currentTaskTitle = update.taskTitle;
       this.lastBusyAtByAgent.set(agent.id, Date.now());
     } else {
-      // Only clear if registry still points to this task (avoid stale overwrites)
       if (agent.currentTaskId && agent.currentTaskId !== update.taskId) {
         return agent;
       }
 
-      // Flap guard: ignore immediate busy->idle transitions for same task
+      const immediateTerminalClear =
+        (update.taskStatus === 'done' || update.taskStatus === 'cancelled') &&
+        agent.currentTaskId === update.taskId;
+
       const lastBusyAt = this.lastBusyAtByAgent.get(agent.id);
-      if (lastBusyAt && Date.now() - lastBusyAt < this.taskSyncFlapGuardMs) {
+      if (
+        !immediateTerminalClear &&
+        lastBusyAt &&
+        Date.now() - lastBusyAt < this.taskSyncFlapGuardMs
+      ) {
         return agent;
       }
 
-      agent.status = 'idle';
+      // Emit ghost-time telemetry for atomic completion clear
+      if (immediateTerminalClear && lastBusyAt) {
+        const now = Date.now();
+        const ghostMinutes = (now - lastBusyAt) / 60000;
+        this.emitNormalizationEvent(
+          agent.id,
+          update.taskId,
+          update.taskStatus,
+          'atomic_completion',
+          ghostMinutes
+        );
+      }
+
       agent.currentTaskId = undefined;
       agent.currentTaskTitle = undefined;
+      this.lastBusyAtByAgent.delete(agent.id);
+      if (agent.status !== 'offline') {
+        agent.status = 'idle';
+      }
     }
 
-    const changed = previousStatus !== agent.status || previousTaskId !== agent.currentTaskId;
-    if (changed) {
-      this.agents.set(agent.id, agent);
+    const sanitized = this.sanitizeAgentState(agent);
+    const nextState = JSON.stringify({
+      status: sanitized.status,
+      currentTaskId: sanitized.currentTaskId,
+      currentTaskTitle: sanitized.currentTaskTitle,
+    });
+
+    if (previousState !== nextState) {
+      this.agents.set(agent.id, sanitized);
       this.persist();
     }
 
-    return agent;
+    return sanitized;
   }
 
   /**
@@ -292,7 +544,8 @@ class AgentRegistryService {
    *
    * Drift correction:
    * - If an agent has an in-progress task assigned, force busy + task linkage.
-   * - If an agent is busy on a task that is now terminal, clear it (subject to flap guard).
+   * - If an agent is busy on a task that is now terminal or absent from the authoritative
+   *   snapshot, clear it (subject to flap guard).
    */
   reconcileFromTasks(tasks: TaskSyncSnapshot[], context: TaskSyncContext): number {
     if (!this.isAuthorizedSyncContext(context)) {
@@ -314,10 +567,9 @@ class AgentRegistryService {
         );
         continue;
       }
+
       const key = task.agent.trim().toLowerCase();
       const existing = byAgentRef.get(key);
-
-      // Authoritative precedence: in-progress wins
       if (!existing || task.status === 'in-progress') {
         byAgentRef.set(key, task);
       }
@@ -331,8 +583,7 @@ class AgentRegistryService {
         byAgentRef.get(agent.name.trim().toLowerCase());
 
       if (mapped?.status === 'in-progress') {
-        const prevStatus = agent.status;
-        const prevTaskId = agent.currentTaskId;
+        const before = JSON.stringify({ status: agent.status, currentTaskId: agent.currentTaskId });
         const updated = this.syncFromTask(
           {
             agentRef: agent.id,
@@ -342,28 +593,34 @@ class AgentRegistryService {
           },
           context
         );
-        if (updated && (updated.currentTaskId !== prevTaskId || updated.status !== prevStatus)) {
-          changed++;
-        }
+        const after = JSON.stringify({
+          status: updated?.status,
+          currentTaskId: updated?.currentTaskId,
+        });
+        if (updated && before !== after) changed++;
         continue;
       }
 
-      if (agent.status === 'busy' && agent.currentTaskId) {
-        const task = tasks.find((t) => t.id === agent.currentTaskId);
-        if (task && task.status !== 'in-progress') {
-          const prevStatus = agent.status;
-          const prevTaskId = agent.currentTaskId;
+      if (agent.currentTaskId) {
+        const task = tasks.find((candidate) => candidate.id === agent.currentTaskId);
+        if (!task || task.status !== 'in-progress') {
+          const before = JSON.stringify({
+            status: agent.status,
+            currentTaskId: agent.currentTaskId,
+          });
           const updated = this.syncFromTask(
             {
               agentRef: agent.id,
-              taskId: task.id,
-              taskStatus: task.status,
+              taskId: agent.currentTaskId,
+              taskStatus: task?.status ?? 'done',
             },
             context
           );
-          if (updated && (updated.status !== prevStatus || updated.currentTaskId !== prevTaskId)) {
-            changed++;
-          }
+          const after = JSON.stringify({
+            status: updated?.status,
+            currentTaskId: updated?.currentTaskId,
+          });
+          if (updated && before !== after) changed++;
         }
       }
     }
@@ -372,11 +629,134 @@ class AgentRegistryService {
   }
 
   /**
-   * Deregister an agent.
+   * Safety net for ghost busy state:
+   * if an agent heartbeat is stale beyond threshold and the linked task is already terminal,
+   * clear the task pointer and normalize the agent to offline transport truth.
    */
+  autoNormalizeStaleTerminalPointers(tasks: TaskSyncSnapshot[]): number {
+    const now = Date.now();
+    const taskById = new Map(tasks.map((task) => [task.id, task]));
+    let changed = 0;
+
+    for (const current of this.agents.values()) {
+      if (current.status !== 'busy' || !current.currentTaskId) continue;
+
+      const lastBeat = new Date(current.lastHeartbeat).getTime();
+      if (Number.isNaN(lastBeat) || now - lastBeat <= HEARTBEAT_TIMEOUT_MS) {
+        continue;
+      }
+
+      const pointedTask = taskById.get(current.currentTaskId);
+      if (pointedTask?.status !== 'done' && pointedTask?.status !== 'cancelled') {
+        continue;
+      }
+
+      const normalized = this.sanitizeAgentState({
+        ...current,
+        status: 'offline',
+        currentTaskId: undefined,
+        currentTaskTitle: undefined,
+      });
+
+      this.agents.set(current.id, normalized);
+      this.lastBusyAtByAgent.delete(current.id);
+      changed += 1;
+
+      // Emit ghost-time telemetry for stale autoclear
+      const ghostMinutes = (now - lastBeat) / 60000;
+      this.emitNormalizationEvent(
+        current.id,
+        pointedTask.id,
+        pointedTask.status,
+        'stale_autoclear',
+        ghostMinutes
+      );
+
+      log.info(
+        {
+          agentId: current.id,
+          taskId: pointedTask.id,
+          taskStatus: pointedTask.status,
+          lastHeartbeat: current.lastHeartbeat,
+        },
+        'Auto-cleared stale terminal task pointer from agent registry'
+      );
+    }
+
+    if (changed > 0) {
+      this.persist();
+    }
+
+    return changed;
+  }
+
+  /**
+   * Deregister an agent.
+   * Known VOS agents remain in the registry as offline roster entries.
+   */
+  /**
+   * Emit a control_plane.normalization telemetry event for ghost-time tracking.
+   * Fire-and-forget — telemetry failures must not block registry operations.
+   */
+  private emitNormalizationEvent(
+    agentId: string,
+    taskId: string,
+    taskStatus: string,
+    trigger: 'atomic_completion' | 'stale_autoclear' | 'manual',
+    ghostBusyMinutes: number
+  ): void {
+    const now = new Date().toISOString();
+    const event: ControlPlaneNormalizationEvent = {
+      id: `cpn_${randomUUID()}`,
+      type: 'control_plane.normalization',
+      timestamp: now,
+      agent: agentId,
+      taskId,
+      trigger,
+      taskStatus,
+      ghostBusyMinutes: Math.round(ghostBusyMinutes * 100) / 100,
+      closureLagMinutes: Math.round(ghostBusyMinutes * 100) / 100,
+      taskCompletedAt: now, // best available — real completion time would require task lookup
+      pointerClearedAt: now,
+    };
+
+    // Lazy import to avoid circular dependency
+    import('./telemetry-service.js')
+      .then(({ getTelemetryService }) => {
+        const telemetry = getTelemetryService();
+        return telemetry.emit(event);
+      })
+      .catch((err) => {
+        log.warn(
+          { err, agentId, taskId, trigger },
+          'Failed to emit normalization telemetry — non-fatal'
+        );
+      });
+  }
+
   deregister(agentId: string): boolean {
-    const existed = this.agents.delete(agentId);
+    const existing = this.agents.get(agentId);
+    if (!existing && !this.isKnownAgent(agentId)) {
+      return false;
+    }
+
     this.lastBusyAtByAgent.delete(agentId);
+
+    if (this.isKnownAgent(agentId)) {
+      const reset = this.hydrateKnownAgent(agentId, {
+        ...existing,
+        status: 'offline',
+        currentTaskId: undefined,
+        currentTaskTitle: undefined,
+        sessionKey: undefined,
+      });
+      this.agents.set(agentId, reset);
+      this.persist();
+      log.info({ agentId }, 'Known agent reset to offline roster entry');
+      return true;
+    }
+
+    const existed = this.agents.delete(agentId);
     if (existed) {
       this.persist();
       log.info({ agentId }, `Agent deregistered: ${agentId}`);
@@ -398,60 +778,82 @@ class AgentRegistryService {
     let agents = Array.from(this.agents.values());
 
     if (filters?.status) {
-      agents = agents.filter((a) => a.status === filters.status);
+      agents = agents.filter((agent) => agent.status === filters.status);
     }
 
     if (filters?.capability) {
-      const cap = filters.capability.toLowerCase();
-      agents = agents.filter((a) => a.capabilities.some((c) => c.name.toLowerCase() === cap));
+      const capability = filters.capability.toLowerCase();
+      agents = agents.filter((agent) =>
+        agent.capabilities.some((candidate) => candidate.name.toLowerCase() === capability)
+      );
     }
 
-    return agents;
+    return this.sortAgents(agents);
+  }
+
+  /**
+   * List the canonical VOS roster in stable order.
+   */
+  listKnownAgents(): RegisteredAgent[] {
+    return KNOWN_VOS_AGENT_IDS.map((id) => this.agents.get(id)).filter(
+      (agent): agent is RegisteredAgent => Boolean(agent)
+    );
   }
 
   /**
    * Find agents that have a specific capability.
    */
   findByCapability(capability: string): RegisteredAgent[] {
-    const cap = capability.toLowerCase();
-    return Array.from(this.agents.values()).filter(
-      (a) => a.status !== 'offline' && a.capabilities.some((c) => c.name.toLowerCase() === cap)
+    const normalizedCapability = capability.toLowerCase();
+    return this.sortAgents(
+      Array.from(this.agents.values()).filter(
+        (agent) =>
+          agent.status !== 'offline' &&
+          agent.capabilities.some(
+            (candidate) => candidate.name.toLowerCase() === normalizedCapability
+          )
+      )
     );
   }
 
   /**
    * Get registry statistics.
    */
-  stats(): {
-    total: number;
-    online: number;
-    busy: number;
-    idle: number;
-    offline: number;
-    capabilities: string[];
-  } {
+  stats(): AgentRegistryStats {
     const agents = Array.from(this.agents.values());
-    const allCaps = new Set<string>();
+    const allCapabilities = new Set<string>();
+
     for (const agent of agents) {
-      for (const cap of agent.capabilities) {
-        allCaps.add(cap.name);
+      for (const capability of agent.capabilities) {
+        allCapabilities.add(capability.name);
       }
     }
 
+    const missingKnownAgents = KNOWN_VOS_AGENT_IDS.filter((id) => !this.agents.has(id));
+
     return {
       total: agents.length,
-      online: agents.filter((a) => a.status === 'online').length,
-      busy: agents.filter((a) => a.status === 'busy').length,
-      idle: agents.filter((a) => a.status === 'idle').length,
-      offline: agents.filter((a) => a.status === 'offline').length,
-      capabilities: Array.from(allCaps).sort(),
+      online: agents.filter((agent) => agent.status === 'online').length,
+      busy: agents.filter((agent) => agent.status === 'busy').length,
+      idle: agents.filter((agent) => agent.status === 'idle').length,
+      offline: agents.filter((agent) => agent.status === 'offline').length,
+      capabilities: Array.from(allCapabilities).sort(),
+      knownAgentsTotal: KNOWN_VOS_AGENT_IDS.length,
+      knownAgentsPresent: KNOWN_VOS_AGENT_IDS.length - missingKnownAgents.length,
+      missingKnownAgents,
+      rosterComplete: missingKnownAgents.length === 0,
     };
   }
 
+  /**
+   * Public helper for route behavior/tests.
+   */
+  isKnownAgent(agentId: string): agentId is KnownVosAgentId {
+    return Object.prototype.hasOwnProperty.call(KNOWN_VOS_AGENT_PROFILES, agentId);
+  }
+
   private isAuthorizedSyncContext(context: TaskSyncContext): boolean {
-    // Primary check: unforgeable capability token (new secure path)
     if (isValidSyncToken(context)) return true;
-    // Reject: string-only contexts are no longer accepted
     return false;
   }
 
@@ -466,7 +868,7 @@ class AgentRegistryService {
    * Returns true if the ref matches a registered agent (by id or name).
    */
   validateAgentRef(agentRef: string): { valid: boolean; reason?: string } {
-    if (!agentRef) return { valid: true }; // no agent assigned is fine
+    if (!agentRef) return { valid: true };
 
     if (!this.isValidAgentRef(agentRef)) {
       return { valid: false, reason: `Malformed agent ref: ${agentRef}` };
@@ -498,18 +900,41 @@ class AgentRegistryService {
   }
 
   /**
-   * Mark stale agents as offline.
+   * Mark stale agents as offline and clear ghost task pointers.
+   *
+   * Exception: if authoritative task-sync has the agent marked busy on a linked
+   * current task, preserve the busy/task truth here and let freshness be surfaced
+   * separately at the cockpit/health layer. Reconciliation remains responsible
+   * for clearing stale busy/task linkage when task truth no longer supports it.
    */
   private checkStaleAgents(): void {
     const now = Date.now();
     let changed = false;
 
-    for (const agent of this.agents.values()) {
-      if (agent.status === 'offline') continue;
+    for (const current of this.agents.values()) {
+      if (current.status === 'offline') continue;
 
-      const lastBeat = new Date(agent.lastHeartbeat).getTime();
+      const lastBeat = new Date(current.lastHeartbeat).getTime();
       if (now - lastBeat > HEARTBEAT_TIMEOUT_MS) {
-        agent.status = 'offline';
+        if (current.status === 'busy' && current.currentTaskId) {
+          log.debug(
+            {
+              agentId: current.id,
+              lastHeartbeat: current.lastHeartbeat,
+              currentTaskId: current.currentTaskId,
+            },
+            'Preserving busy task-linked agent despite stale heartbeat; freshness is surfaced separately'
+          );
+          continue;
+        }
+
+        const agent = this.sanitizeAgentState({
+          ...current,
+          status: 'offline',
+          currentTaskId: undefined,
+          currentTaskTitle: undefined,
+        });
+        this.agents.set(agent.id, agent);
         changed = true;
         log.info(
           { agentId: agent.id, lastHeartbeat: agent.lastHeartbeat },
@@ -550,23 +975,106 @@ class AgentRegistryService {
   }
 
   /**
-   * Load registry from disk.
+   * Load registry from disk and ensure the canonical VOS roster always exists.
    */
   private load(): void {
+    let loadedData: AgentRegistryData | null = null;
+
     try {
       if (existsSync(this.filePath)) {
         const raw = readFileSync(this.filePath, 'utf-8');
-        const data = JSON.parse(raw) as AgentRegistryData;
-        if (data.agents) {
-          for (const [id, agent] of Object.entries(data.agents)) {
-            this.agents.set(id, agent);
-          }
-          log.info({ count: this.agents.size }, 'Agent registry loaded from disk');
-        }
+        loadedData = JSON.parse(raw) as AgentRegistryData;
       }
     } catch (err) {
-      log.warn({ err }, 'Could not load agent registry, starting fresh');
+      log.warn({ err }, 'Could not load agent registry, rebuilding from canonical roster');
     }
+
+    const nextAgents = new Map<string, RegisteredAgent>();
+
+    for (const [id, rawAgent] of Object.entries(loadedData?.agents ?? {})) {
+      nextAgents.set(id, this.hydrateAgent(rawAgent));
+    }
+
+    for (const knownAgentId of KNOWN_VOS_AGENT_IDS) {
+      nextAgents.set(
+        knownAgentId,
+        this.hydrateKnownAgent(knownAgentId, nextAgents.get(knownAgentId))
+      );
+    }
+
+    this.agents = nextAgents;
+    this.persist();
+    log.info({ count: this.agents.size }, 'Agent registry loaded with canonical roster');
+  }
+
+  private hydrateAgent(agent: RegisteredAgent): RegisteredAgent {
+    if (this.isKnownAgent(agent.id)) {
+      return this.hydrateKnownAgent(agent.id, agent);
+    }
+    return this.sanitizeAgentState({
+      ...agent,
+      capabilities: agent.capabilities ?? [],
+      metadata: agent.metadata ? { ...agent.metadata } : undefined,
+    });
+  }
+
+  private hydrateKnownAgent(
+    agentId: KnownVosAgentId,
+    existing?: Partial<RegisteredAgent>
+  ): RegisteredAgent {
+    const profile = KNOWN_VOS_AGENT_PROFILES[agentId];
+    const now = new Date().toISOString();
+
+    return this.sanitizeAgentState({
+      id: profile.id,
+      name: profile.name,
+      model: existing?.model ?? profile.model,
+      provider: existing?.provider ?? profile.provider,
+      capabilities:
+        existing?.capabilities && existing.capabilities.length > 0
+          ? existing.capabilities
+          : profile.capabilities.map((capability) => ({ ...capability })),
+      version: existing?.version ?? profile.version,
+      metadata: {
+        ...profile.metadata,
+        ...existing?.metadata,
+      },
+      status: existing?.status ?? 'offline',
+      registeredAt: existing?.registeredAt ?? now,
+      lastHeartbeat: existing?.lastHeartbeat ?? existing?.registeredAt ?? now,
+      currentTaskId: existing?.currentTaskId,
+      currentTaskTitle: existing?.currentTaskTitle,
+      sessionKey: existing?.sessionKey,
+    });
+  }
+
+  private sanitizeAgentState(agent: RegisteredAgent): RegisteredAgent {
+    const sanitized: RegisteredAgent = {
+      ...agent,
+      capabilities: agent.capabilities ?? [],
+      metadata: agent.metadata ? { ...agent.metadata } : undefined,
+    };
+
+    if (sanitized.status !== 'busy') {
+      sanitized.currentTaskId = undefined;
+      sanitized.currentTaskTitle = undefined;
+    }
+
+    if (!sanitized.currentTaskId) {
+      sanitized.currentTaskTitle = undefined;
+    }
+
+    return sanitized;
+  }
+
+  private sortAgents(agents: RegisteredAgent[]): RegisteredAgent[] {
+    const rank = new Map<string, number>(KNOWN_VOS_AGENT_IDS.map((id, index) => [id, index]));
+    return [...agents].sort((left, right) => {
+      const leftRank = rank.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+      const rightRank = rank.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+      return left.name.localeCompare(right.name);
+    });
   }
 
   /**

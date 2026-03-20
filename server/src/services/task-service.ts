@@ -231,6 +231,10 @@ export class TaskService {
 
   /** Start watching tasksDir for external file changes */
   private startWatcher(): void {
+    if (process.env.VERITAS_DISABLE_WATCHERS === '1') {
+      log.info('File watcher disabled via VERITAS_DISABLE_WATCHERS');
+      return;
+    }
     try {
       this.watcher = watch(this.tasksDir, (eventType, filename) => {
         if (!filename || !filename.endsWith('.md')) return;
@@ -243,6 +247,17 @@ export class TaskService {
         this.reloadFile(filename).catch((err) =>
           log.error({ err, filename }, 'Error reloading file')
         );
+      });
+      // Handle async watcher errors (EMFILE, etc.) gracefully instead of crashing
+      this.watcher.on('error', (err) => {
+        log.warn(
+          { err },
+          'File watcher error — disabling watcher (server continues without hot-reload)'
+        );
+        if (this.watcher) {
+          this.watcher.close();
+          this.watcher = null;
+        }
       });
     } catch (err) {
       // fs.watch can fail on some platforms or when dir doesn't exist yet
@@ -436,6 +451,7 @@ export class TaskService {
         updated: data.updated || new Date().toISOString(),
         git: data.git,
         github: data.github,
+        plan: data.plan,
         attempt: data.attempt,
         attempts: data.attempts,
         reviewComments,
@@ -464,7 +480,7 @@ export class TaskService {
     }
   }
 
-  private syncAgentRegistryForStatusTransition(task: Task): void {
+  private syncAgentRegistryForStatusTransition(task: Task, previousStatus?: Task['status']): void {
     if (!task.agent) return;
 
     if (!['todo', 'in-progress', 'blocked', 'done', 'cancelled'].includes(task.status)) return;
@@ -479,6 +495,10 @@ export class TaskService {
       },
       TASK_SYNC_CONTEXT
     );
+
+    if (previousStatus === 'in-progress' && task.status === 'done') {
+      log.debug({ taskId: task.id, agent: task.agent }, 'Applied atomic completion registry clear');
+    }
   }
 
   private startTaskSyncReconciler(): void {
@@ -564,6 +584,7 @@ export class TaskService {
       project: input.project,
       sprint: input.sprint,
       agent: input.agent, // Pre-assigned agent (or "auto" for routing)
+      plan: input.plan,
       subtasks: input.subtasks, // Include subtasks from template
       blockedBy: input.blockedBy, // Include dependencies from blueprint
       created: now,
@@ -624,6 +645,7 @@ export class TaskService {
     const {
       git: gitUpdate,
       github: githubUpdate,
+      automation: automationUpdate,
       blockedReason: blockedReasonUpdate,
       ...restInput
     } = input;
@@ -706,22 +728,27 @@ export class TaskService {
 
           // Enforcement: Closing Comments Required (only if enforcement settings are explicitly configured)
           if (settings.enforcement?.closingComments === true) {
-            const comments = input.reviewComments ?? freshTask.reviewComments ?? [];
-            const hasClosingComment =
-              comments.length > 0 &&
-              comments.some((c: { content: string }) => c.content && c.content.length >= 20);
+            const reviewComments = input.reviewComments ?? freshTask.reviewComments ?? [];
+            const taskComments = input.comments ?? freshTask.comments ?? [];
+            const hasReviewCloseout = reviewComments.some(
+              (c: { content: string }) => c.content && c.content.trim().length >= 20
+            );
+            const hasTaskCloseout = taskComments.some(
+              (c: { text: string }) => c.text && c.text.trim().length >= 20
+            );
+            const hasClosingComment = hasReviewCloseout || hasTaskCloseout;
             if (!hasClosingComment) {
-              const commentCount = comments.length;
+              const totalComments = reviewComments.length + taskComments.length;
               const detailMessage =
-                commentCount === 0
-                  ? 'Closing Comments: At least one review comment with a deliverable summary (≥20 characters) is required before marking this task as done. No comments added yet.'
-                  : 'Closing Comments: At least one review comment with a deliverable summary (≥20 characters) is required before marking this task as done. Current comments are too short.';
+                totalComments === 0
+                  ? 'Closing Comments: At least one meaningful closing note (task comment or review comment with a deliverable summary, ≥20 characters) is required before marking this task as done. No comments added yet.'
+                  : 'Closing Comments: At least one meaningful closing note (task comment or review comment with a deliverable summary, ≥20 characters) is required before marking this task as done. Current comments are too short.';
 
               throw new ValidationError(detailMessage, [
                 {
                   code: 'CLOSING_COMMENTS_REQUIRED',
                   message: detailMessage,
-                  path: ['reviewComments'],
+                  path: ['comments'],
                 },
               ]);
             }
@@ -792,6 +819,9 @@ export class TaskService {
         ...restInput,
         git: gitUpdate ? ({ ...freshTask.git, ...gitUpdate } as Task['git']) : freshTask.git,
         github: githubUpdate ?? freshTask.github,
+        automation: automationUpdate
+          ? ({ ...freshTask.automation, ...automationUpdate } as Task['automation'])
+          : freshTask.automation,
         // Handle blockedReason: null means clear, undefined means keep existing
         blockedReason:
           blockedReasonUpdate === null
@@ -816,7 +846,7 @@ export class TaskService {
 
       // Emit telemetry event if status changed
       if (statusChanged) {
-        this.syncAgentRegistryForStatusTransition(updatedTask);
+        this.syncAgentRegistryForStatusTransition(updatedTask, previousStatus);
 
         await this.telemetry.emit<TaskTelemetryEvent>({
           type: 'task.status_changed',
@@ -1656,6 +1686,105 @@ export class TaskService {
       .sort((a, b) => b.totalSeconds - a.totalSeconds);
 
     return { byProject, total };
+  }
+
+  // ============ Truthful Progress Event Ingestion ============
+
+  /**
+   * Handle truthful progress events from telemetry ingestion.
+   * Drives task-side effects when taskId is present:
+   * - run.started → transition task to in-progress, record agent linkage
+   * - run.completed → record completion observation with duration
+   * - run.error → record error observation
+   *
+   * Preserves auditable event → task → agent linkage via observations.
+   */
+  async handleProgressEvent(event: {
+    type: string;
+    taskId?: string;
+    agent?: string;
+    success?: boolean;
+    durationMs?: number;
+    error?: string;
+    sessionKey?: string;
+    model?: string;
+  }): Promise<{ taskId: string; action: string } | null> {
+    if (!event.taskId) return null;
+
+    const task = await this.getTask(event.taskId);
+    if (!task) {
+      log.debug(
+        { taskId: event.taskId, type: event.type },
+        'Progress event for unknown task — skipped'
+      );
+      return null;
+    }
+
+    const now = new Date().toISOString();
+
+    switch (event.type) {
+      case 'run.started': {
+        const updates: UpdateTaskInput = {};
+
+        // Transition to in-progress if currently todo
+        if (task.status === 'todo') {
+          updates.status = 'in-progress';
+        }
+
+        // Add observation for auditable event → task → agent linkage
+        const observations = [...(task.observations || [])];
+        observations.push({
+          id: `obs_${Date.now()}_${nanoid(4)}`,
+          type: 'context' as const,
+          content: `Run started by agent "${event.agent}"${event.model ? ` (model: ${event.model})` : ''}${event.sessionKey ? ` [session: ${event.sessionKey}]` : ''}`,
+          score: 3,
+          timestamp: now,
+          agent: event.agent,
+        });
+        updates.observations = observations;
+
+        await this.updateTask(event.taskId, updates);
+        return { taskId: event.taskId, action: 'run_started' };
+      }
+
+      case 'run.completed': {
+        const observations = [...(task.observations || [])];
+        const successStr = event.success ? 'successfully' : 'with failure';
+        const durationStr = event.durationMs ? ` (${Math.round(event.durationMs / 1000)}s)` : '';
+        observations.push({
+          id: `obs_${Date.now()}_${nanoid(4)}`,
+          type: event.success ? ('insight' as const) : ('blocker' as const),
+          content: `Run completed ${successStr} by agent "${event.agent}"${durationStr}${event.error ? `: ${event.error}` : ''}`,
+          score: event.success ? 5 : 7,
+          timestamp: now,
+          agent: event.agent,
+        });
+
+        await this.updateTask(event.taskId, { observations });
+        return {
+          taskId: event.taskId,
+          action: event.success ? 'run_completed_success' : 'run_completed_failure',
+        };
+      }
+
+      case 'run.error': {
+        const observations = [...(task.observations || [])];
+        observations.push({
+          id: `obs_${Date.now()}_${nanoid(4)}`,
+          type: 'blocker' as const,
+          content: `Run error from agent "${event.agent}": ${event.error}`,
+          score: 8,
+          timestamp: now,
+          agent: event.agent,
+        });
+
+        await this.updateTask(event.taskId, { observations });
+        return { taskId: event.taskId, action: 'run_error' };
+      }
+
+      default:
+        return null;
+    }
   }
 }
 

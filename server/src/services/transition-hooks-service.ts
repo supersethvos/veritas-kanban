@@ -168,6 +168,16 @@ export async function findApplicableRules(
 /**
  * Check a single gate against a task.
  */
+function hasMeaningfulCloseoutNote(task: Pick<Task, 'comments' | 'reviewComments'>): boolean {
+  const taskComments = (task.comments || []).some(
+    (comment) => typeof comment.text === 'string' && comment.text.trim().length >= 20
+  );
+  const reviewComments = (task.reviewComments || []).some(
+    (comment) => typeof comment.content === 'string' && comment.content.trim().length >= 20
+  );
+  return taskComments || reviewComments;
+}
+
 function checkGate(gate: TransitionGate, task: Task): GateCheckResult {
   if (!gate.enabled) {
     return { gate, passed: true, message: 'Gate disabled' };
@@ -212,8 +222,12 @@ function checkGate(gate: TransitionGate, task: Task): GateCheckResult {
       break;
 
     case 'require-closing-comment':
-      passed = !!task.comments && task.comments.length > 0;
-      if (!passed) message = gate.errorMessage || 'Task must have at least one comment';
+      passed = hasMeaningfulCloseoutNote(task);
+      if (!passed) {
+        message =
+          gate.errorMessage ||
+          'Task must have at least one meaningful closing note (task comment or review comment, ≥20 characters)';
+      }
       break;
 
     case 'require-subtasks-complete':
@@ -230,6 +244,18 @@ function checkGate(gate: TransitionGate, task: Task): GateCheckResult {
     case 'require-blocker-reason':
       passed = !!task.blockedReason && !!task.blockedReason.category;
       if (!passed) message = gate.errorMessage || 'A blocker reason must be provided';
+      break;
+
+    case 'require-acceptance-criteria':
+      // Acceptance criteria = verification steps (binary done checks) on the task
+      passed = !!task.verificationSteps && task.verificationSteps.length > 0;
+      if (!passed)
+        message = gate.errorMessage || 'Task must have acceptance criteria before starting work';
+      break;
+
+    case 'require-deliverables':
+      passed = !!task.deliverables && task.deliverables.length > 0;
+      if (!passed) message = gate.errorMessage || 'Task must have at least one deliverable defined';
       break;
 
     default:

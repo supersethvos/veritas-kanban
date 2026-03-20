@@ -89,6 +89,14 @@ process.on('unhandledRejection', (reason: unknown) => {
 });
 
 process.on('uncaughtException', (err: Error) => {
+  // EMFILE from file watchers is non-fatal — the server runs fine without hot-reload
+  if ('code' in err && (err as NodeJS.ErrnoException).code === 'EMFILE') {
+    log.warn(
+      { err },
+      'EMFILE error (too many open files) — disabling file watchers, server continues'
+    );
+    return;
+  }
   log.fatal({ err }, 'Uncaught exception — terminating');
   // uncaughtException leaves the process in an undefined state;
   // attempt graceful shutdown then force-exit.

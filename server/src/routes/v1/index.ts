@@ -73,6 +73,10 @@ import delegationRoutes from '../delegation.js';
 import { workflowRoutes } from '../workflows.js';
 import toolPolicyRoutes from '../tool-policies.js';
 import { integrationsRoutes } from '../integrations.js';
+import { cockpitRoutes } from '../cockpit.js';
+import { founderSurfaceRoutes } from '../founder-surface.js';
+import { signalDispatchRoutes } from '../signal-dispatch.js';
+import { realtimeSessionRoutes } from '../realtime-session.js';
 
 const v1Router: IRouter = Router();
 
@@ -128,6 +132,10 @@ v1Router.use('/agents', agentRoutes);
 v1Router.use('/diff', diffRoutes);
 v1Router.use('/automation', automationRoutes);
 v1Router.use('/summary', summaryRoutes);
+v1Router.use('/cockpit', cockpitRoutes);
+v1Router.use('/founder-surface', founderSurfaceRoutes);
+v1Router.use('/signals', signalDispatchRoutes);
+v1Router.use('/realtime', realtimeSessionRoutes);
 v1Router.use('/notifications', notificationRoutes);
 v1Router.use('/broadcasts', broadcastRoutes);
 v1Router.use('/templates', templateRoutes);

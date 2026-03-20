@@ -51,7 +51,7 @@ describe('Task ↔ Agent registry sync (route-level integration)', () => {
     await fs.rm(testRoot, { recursive: true, force: true }).catch(() => {});
   });
 
-  it('syncs agent busy/idle state from task route transitions with registry readback', async () => {
+  it('clears the registry task pointer immediately when a route-level completion lands', async () => {
     const agentId = 'route-sync-agent-1';
 
     // 1) Register agent.
@@ -90,11 +90,32 @@ describe('Task ↔ Agent registry sync (route-level integration)', () => {
     expect(agentBusy.body.status).toBe('busy');
     expect(agentBusy.body.currentTaskId).toBe(createdTask.id);
 
-    // 4) Move task to done => registry should return to idle + clear task.
+    // 4) Move task to done => registry should return to idle + clear task in the same flow.
     // Test forces flap guard to 0ms (VERITAS_TASK_SYNC_FLAP_GUARD_MS) for deterministic timing.
     const toDone = await request(app)
       .patch(`/api/tasks/${createdTask.id}`)
-      .send({ status: 'done' });
+      .send({
+        status: 'done',
+        reviewScores: [10, 10, 10, 10],
+        deliverables: [
+          {
+            id: 'deliverable-1',
+            title: 'Agent sync verification',
+            type: 'artifact',
+            status: 'accepted',
+            created: new Date().toISOString(),
+          },
+        ],
+        reviewComments: [
+          {
+            id: 'closing-1',
+            file: 'test',
+            line: 1,
+            content: 'Route sync smoke test completed — agent registry sync verified end-to-end.',
+            created: new Date().toISOString(),
+          },
+        ],
+      });
     expect(toDone.status).toBe(200);
 
     const agentIdle = await request(app).get(`/api/agents/register/${agentId}`);

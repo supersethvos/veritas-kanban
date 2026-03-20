@@ -115,6 +115,55 @@ describe('Enforcement gates', () => {
     );
   });
 
+  it('allows completion with a meaningful task comment when closing comments are required', async () => {
+    vi.spyOn(ConfigService.prototype, 'getFeatureSettings').mockResolvedValue(
+      buildSettings({ enforcement: { closingComments: true } }) as any
+    );
+    service = new TaskService({ tasksDir, archiveDir });
+
+    const task = await service.createTask({
+      title: 'Task comment satisfies closing comment gate',
+    });
+
+    const updated = await service.updateTask(task.id, {
+      status: 'done',
+      comments: [
+        {
+          id: 'comment_closeout',
+          author: 'SETH',
+          text: 'Backend foundation verified and deliverable accepted for closeout.',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    });
+    expect(updated.status).toBe('done');
+  });
+
+  it('allows completion with a meaningful review comment when closing comments are required', async () => {
+    vi.spyOn(ConfigService.prototype, 'getFeatureSettings').mockResolvedValue(
+      buildSettings({ enforcement: { closingComments: true } }) as any
+    );
+    service = new TaskService({ tasksDir, archiveDir });
+
+    const task = await service.createTask({
+      title: 'Review comment satisfies closing comment gate',
+    });
+
+    const updated = await service.updateTask(task.id, {
+      status: 'done',
+      reviewComments: [
+        {
+          id: 'review_closeout',
+          file: 'server/src/services/example.ts',
+          line: 1,
+          content: 'Reviewed and approved with explicit deliverable summary for closeout.',
+          created: new Date().toISOString(),
+        },
+      ],
+    });
+    expect(updated.status).toBe('done');
+  });
+
   it('skips enforcement when enforcement settings are missing', async () => {
     vi.spyOn(ConfigService.prototype, 'getFeatureSettings').mockResolvedValue({
       ...DEFAULT_FEATURE_SETTINGS,

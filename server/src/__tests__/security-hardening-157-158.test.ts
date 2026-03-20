@@ -162,8 +162,17 @@ describe('Security Hardening (#157 #158)', () => {
 
     it('reconcileFromTasks accepts valid capability token', () => {
       const registry = getAgentRegistryService();
-      const validContext = createTaskSyncToken('task-reconciler');
 
+      // Clear any busy state left by prior tests by re-registering the agent.
+      // syncFromTask won't work here due to the 10s flap guard on busy→idle transitions.
+      registry.deregister('test-agent');
+      registry.register({
+        id: 'test-agent',
+        name: 'Test Agent',
+        capabilities: [{ name: 'code' }],
+      });
+
+      const validContext = createTaskSyncToken('task-reconciler');
       const changes = registry.reconcileFromTasks([], validContext);
       expect(changes).toBe(0);
     });

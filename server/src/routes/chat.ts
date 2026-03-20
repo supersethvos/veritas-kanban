@@ -33,6 +33,7 @@ const chatSendSchema = z.object({
   agent: z.string().optional(),
   model: z.string().optional(),
   mode: z.enum(['ask', 'build']).optional(),
+  thinkingLevel: z.enum(['low', 'medium', 'high', 'xhigh']).optional(),
 });
 
 const squadMessageSchema = z.object({
@@ -117,59 +118,70 @@ router.post(
       message: 'Message sent — agent response incoming',
     });
 
+    // Signal clients that the agent is thinking
+    broadcastChatMessage(sessionId, {
+      type: 'chat:thinking',
+      sessionId,
+    });
+
     // Trigger async AI response via Clawdbot Gateway
     const gatewaySessionKey = `kanban-chat-${sessionId}`;
 
-    sendGatewayChat(input.message, gatewaySessionKey, {
-      onDelta: (text) => {
-        // Broadcast streaming chunk to kanban WebSocket clients
-        broadcastChatMessage(sessionId, {
-          type: 'chat:delta',
-          sessionId,
-          text,
-        });
-      },
-      onFinal: async (response) => {
-        try {
-          // Save the assistant response to the session
-          const assistantMessage = await chatService.addMessage(sessionId, {
-            role: 'assistant',
-            content: response.text,
-            agent: session.agent,
-          });
-
-          log.info({ sessionId, messageId: assistantMessage.id }, 'Assistant response saved');
-
-          // Broadcast final message to kanban WebSocket clients
+    sendGatewayChat(
+      input.message,
+      gatewaySessionKey,
+      {
+        onDelta: (text) => {
+          // Broadcast streaming chunk to kanban WebSocket clients
           broadcastChatMessage(sessionId, {
-            type: 'chat:message',
+            type: 'chat:delta',
             sessionId,
-            message: assistantMessage,
+            text,
           });
-        } catch (err: any) {
-          log.error({ err: err.message, sessionId }, 'Failed to save assistant response');
-        }
-      },
-      onError: async (error) => {
-        log.error({ error, sessionId }, 'Gateway chat error');
+        },
+        onFinal: async (response) => {
+          try {
+            // Save the assistant response to the session
+            const assistantMessage = await chatService.addMessage(sessionId, {
+              role: 'assistant',
+              content: response.text,
+              agent: session.agent,
+            });
 
-        // Save error as system message
-        try {
-          await chatService.addMessage(sessionId, {
-            role: 'system',
-            content: `Error: ${error}`,
-          });
+            log.info({ sessionId, messageId: assistantMessage.id }, 'Assistant response saved');
 
-          broadcastChatMessage(sessionId, {
-            type: 'chat:error',
-            sessionId,
-            error,
-          });
-        } catch (err: any) {
-          log.error({ err: err.message }, 'Failed to save error message');
-        }
+            // Broadcast final message to kanban WebSocket clients
+            broadcastChatMessage(sessionId, {
+              type: 'chat:message',
+              sessionId,
+              message: assistantMessage,
+            });
+          } catch (err: any) {
+            log.error({ err: err.message, sessionId }, 'Failed to save assistant response');
+          }
+        },
+        onError: async (error) => {
+          log.error({ error, sessionId }, 'Gateway chat error');
+
+          // Save error as system message
+          try {
+            await chatService.addMessage(sessionId, {
+              role: 'system',
+              content: `Error: ${error}`,
+            });
+
+            broadcastChatMessage(sessionId, {
+              type: 'chat:error',
+              sessionId,
+              error,
+            });
+          } catch (err: any) {
+            log.error({ err: err.message }, 'Failed to save error message');
+          }
+        },
       },
-    }).catch((err) => {
+      input.thinkingLevel ? { thinkingLevel: input.thinkingLevel } : undefined
+    ).catch((err) => {
       log.error({ err: err.message, sessionId }, 'Gateway chat failed');
     });
   })
@@ -236,6 +248,89 @@ router.delete(
     log.info({ sessionId }, 'Chat session deleted');
 
     res.status(204).send();
+  })
+);
+
+/**
+ * POST /api/chat/voice-transcript
+ * Save a voice exchange (user + agent messages) without triggering a gateway call.
+ * Used by the Realtime voice system to persist transcripts to chat history.
+ */
+const voiceTranscriptSchema = z.object({
+  sessionId: z.string().optional(),
+  taskId: z.string().optional(),
+  userText: z.string().min(1),
+  agentText: z.string().min(1),
+});
+
+router.post(
+  '/voice-transcript',
+  asyncHandler(async (req, res) => {
+    const input = voiceTranscriptSchema.parse(req.body);
+
+    let sessionId: string;
+
+    if (input.sessionId) {
+      const session = await chatService.getSession(input.sessionId);
+      if (!session) {
+        // Create if missing (task-scoped sessions use deterministic IDs)
+        const newSession = await chatService.createSession({
+          taskId: input.taskId,
+          agent: 'veritas',
+          mode: 'ask',
+        });
+        sessionId = newSession.id;
+      } else {
+        sessionId = input.sessionId;
+      }
+    } else if (input.taskId) {
+      const session = await chatService.getSessionForTask(input.taskId);
+      if (!session) {
+        const newSession = await chatService.createSession({
+          taskId: input.taskId,
+          agent: 'veritas',
+          mode: 'ask',
+        });
+        sessionId = newSession.id;
+      } else {
+        sessionId = session.id;
+      }
+    } else {
+      const newSession = await chatService.createSession({
+        agent: 'veritas',
+        mode: 'ask',
+      });
+      sessionId = newSession.id;
+    }
+
+    // Save user message
+    const userMessage = await chatService.addMessage(sessionId, {
+      role: 'user',
+      content: `[voice] ${input.userText}`,
+    });
+
+    // Save agent response
+    const agentMessage = await chatService.addMessage(sessionId, {
+      role: 'assistant',
+      content: input.agentText,
+      agent: 'veritas',
+    });
+
+    log.info(
+      { sessionId, userMsgId: userMessage.id, agentMsgId: agentMessage.id },
+      'Voice transcript saved'
+    );
+
+    // Broadcast so the chat UI updates in real-time
+    broadcastChatMessage(sessionId, {
+      type: 'chat:message',
+      sessionId,
+      message: agentMessage,
+    });
+
+    res
+      .status(201)
+      .json({ sessionId, userMessageId: userMessage.id, agentMessageId: agentMessage.id });
   })
 );
 

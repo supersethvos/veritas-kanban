@@ -68,6 +68,21 @@ router.post(
     // Broadcast to WebSocket clients
     broadcastTelemetryEvent(event as AnyTelemetryEvent);
 
+    // Drive truthful task-side effects for progress events (non-blocking)
+    if (
+      eventInput.type === 'run.started' ||
+      eventInput.type === 'run.completed' ||
+      eventInput.type === 'run.error'
+    ) {
+      const taskService = getTaskService();
+      taskService.handleProgressEvent(eventInput).catch((err) => {
+        log.error(
+          { err, taskId: eventInput.taskId, type: eventInput.type },
+          '[Telemetry] Progress event task side-effect error'
+        );
+      });
+    }
+
     // Check for failure events and send alerts (non-blocking)
     const failureAlertService = getFailureAlertService();
     if (failureAlertService.isFailureEvent(eventInput)) {
@@ -77,7 +92,9 @@ router.post(
           let taskTitle: string | undefined;
           try {
             const taskService = getTaskService();
-            const task = await taskService.getTask(eventInput.taskId);
+            const task = eventInput.taskId
+              ? await taskService.getTask(eventInput.taskId)
+              : undefined;
             taskTitle = task?.title;
           } catch {
             // Task not found is fine, we'll use taskId

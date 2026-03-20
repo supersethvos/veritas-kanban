@@ -104,7 +104,7 @@ export function broadcastTaskChange(
 }
 
 export interface ChatBroadcastEvent {
-  type: 'chat:delta' | 'chat:message' | 'chat:error';
+  type: 'chat:delta' | 'chat:message' | 'chat:error' | 'chat:thinking';
   sessionId: string;
   text?: string;
   message?: unknown;
@@ -121,12 +121,14 @@ export function broadcastChatMessage(sessionId: string, event: ChatBroadcastEven
 
   broadcastToClients(payload);
 
-  // Also notify via webhook (fire-and-forget)
-  notifyChatMessage(
-    sessionId,
-    event.type as 'chat:message' | 'chat:delta' | 'chat:error',
-    typeof event.text === 'string' ? event.text : undefined
-  );
+  // Notify via webhook for persisted events only (not transient signals like chat:thinking)
+  if (event.type === 'chat:message' || event.type === 'chat:delta' || event.type === 'chat:error') {
+    notifyChatMessage(
+      sessionId,
+      event.type,
+      typeof event.text === 'string' ? event.text : undefined
+    );
+  }
 }
 
 export interface SquadBroadcastEvent {

@@ -111,6 +111,16 @@ export const envSchema = z.object({
   // ── External Services ───────────────────────────────────────────────
   /** Clawdbot gateway URL */
   CLAWDBOT_GATEWAY: z.string().url().optional().default('http://127.0.0.1:18789'),
+
+  // ── OpenAI Realtime ───────────────────────────────────────────────
+  /** OpenAI API key (general) */
+  OPENAI_API_KEY: z.string().optional(),
+
+  /** OpenAI Realtime API key (overrides OPENAI_API_KEY for realtime sessions) */
+  OPENAI_REALTIME_API_KEY: z.string().optional(),
+
+  /** OpenAI Realtime model identifier */
+  OPENAI_REALTIME_MODEL: z.string().optional().default('gpt-realtime'),
 });
 
 // ---------------------------------------------------------------------------

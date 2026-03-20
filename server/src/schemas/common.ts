@@ -81,6 +81,10 @@ export const TelemetryEventTypeSchema = z.enum([
   'run.completed',
   'run.error',
   'run.tokens',
+  'signal.health',
+  'signal.completion',
+  'signal.dispatch_blocked',
+  'signal.generic',
 ]);
 
 export type ValidTelemetryEventType = z.infer<typeof TelemetryEventTypeSchema>;

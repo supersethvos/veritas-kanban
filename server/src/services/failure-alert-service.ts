@@ -127,34 +127,35 @@ export class FailureAlertService {
         return { sent: false, reason: 'disabled' };
       }
 
-      // Check deduplication
-      if (this.isRecentlyAlerted(event.taskId)) {
-        log.info(`[FailureAlert] Skipping duplicate alert for task ${event.taskId}`);
+      // Check deduplication (signal events have optional taskId — skip dedup if missing)
+      const taskId = event.taskId ?? '';
+      if (taskId && this.isRecentlyAlerted(taskId)) {
+        log.info(`[FailureAlert] Skipping duplicate alert for task ${taskId}`);
         return { sent: false, reason: 'deduplicated' };
       }
 
       // Create notification
       const agent = this.getAgentName(event);
       const error = this.getErrorMessage(event);
-      const title = taskTitle || event.taskId;
+      const title = taskTitle || taskId || 'unknown';
 
       const notification = await this.notifications.createNotification({
         type: 'agent_failed',
         title: 'Agent Run Failed',
         message: `**${agent}** failed on "${title}"\n\n**Error:** ${this.truncateError(error)}`,
-        taskId: event.taskId,
+        taskId: taskId,
         taskTitle: taskTitle,
         project: event.project,
       });
 
       // Record for deduplication
-      this.recordAlert(event.taskId);
+      if (taskId) this.recordAlert(taskId);
 
       // Try to send via webhook for immediate delivery (non-blocking)
       const formattedMessage = this.formatFailureMessage(
         agent,
         title,
-        event.taskId,
+        taskId,
         error,
         event.project
       );

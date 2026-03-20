@@ -1,8 +1,9 @@
 /**
  * WorkflowStepExecutor — Executes individual workflow steps
- * Phase 1: Core Engine (agent steps only, OpenClaw integration placeholder)
+ * Spawns real OpenClaw agent sessions via `openclaw agent` CLI
  */
 
+import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import sanitizeFilename from 'sanitize-filename';
@@ -26,6 +27,132 @@ export class WorkflowStepExecutor {
 
   constructor(runsDir?: string) {
     this.runsDir = runsDir || getWorkflowRunsDir();
+  }
+
+  /**
+   * Spawn an OpenClaw agent via CLI and wait for completion.
+   * Uses `openclaw agent --agent <id> --message <prompt> --json`.
+   */
+  private async spawnAgent(options: {
+    agentId: string;
+    prompt: string;
+    sessionId?: string;
+    timeout: number;
+    runId: string;
+    stepId: string;
+  }): Promise<{ output: string; sessionId?: string; exitCode: number; stderr: string }> {
+    const OPENCLAW_BIN = process.env.OPENCLAW_BIN || '/opt/homebrew/bin/openclaw';
+
+    const args = ['agent', '--agent', options.agentId, '--message', options.prompt, '--json'];
+    if (options.sessionId) {
+      args.push('--session-id', options.sessionId);
+    }
+    args.push('--timeout', String(options.timeout));
+
+    log.info(
+      {
+        runId: options.runId,
+        stepId: options.stepId,
+        agentId: options.agentId,
+        timeout: options.timeout,
+        hasSessionId: !!options.sessionId,
+      },
+      'Spawning openclaw agent'
+    );
+
+    return new Promise((resolve, reject) => {
+      const proc = spawn(OPENCLAW_BIN, args, {
+        env: { ...process.env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      proc.on('error', (error: Error) => {
+        clearTimeout(killTimer);
+        reject(new Error(`Failed to spawn openclaw: ${error.message}`));
+      });
+
+      proc.on('close', (code: number | null) => {
+        clearTimeout(killTimer);
+
+        if (code === null) {
+          reject(new Error(`Agent ${options.agentId} killed (timeout or signal)`));
+          return;
+        }
+
+        // Try to extract session ID and structured output from JSON
+        let sessionId: string | undefined;
+        let agentOutput = stdout;
+
+        try {
+          const parsed = JSON.parse(stdout);
+          sessionId = parsed.session_id || parsed.sessionId;
+          const structured = parsed.result || parsed.output || parsed.message;
+          if (structured !== undefined) {
+            agentOutput = typeof structured === 'string' ? structured : JSON.stringify(structured);
+          }
+        } catch {
+          // Not valid JSON — use raw stdout
+        }
+
+        log.info(
+          {
+            runId: options.runId,
+            stepId: options.stepId,
+            agentId: options.agentId,
+            exitCode: code,
+            outputLength: agentOutput.length,
+            hasSessionId: !!sessionId,
+          },
+          'Agent execution completed'
+        );
+
+        resolve({ output: agentOutput, sessionId, exitCode: code, stderr });
+      });
+
+      // Node-level timeout: openclaw timeout + 30s grace, then SIGTERM → SIGKILL
+      const nodeTimeout = (options.timeout + 30) * 1000;
+      const killTimer = setTimeout(() => {
+        log.warn(
+          { runId: options.runId, stepId: options.stepId, agentId: options.agentId },
+          'Agent exceeded node timeout — sending SIGTERM'
+        );
+        proc.kill('SIGTERM');
+        setTimeout(() => {
+          try {
+            proc.kill('SIGKILL');
+          } catch {
+            /* already dead */
+          }
+        }, 5000);
+      }, nodeTimeout);
+    });
+  }
+
+  /**
+   * Build tool policy preamble for prompt injection.
+   * Since `openclaw agent` CLI doesn't support --allowedTools,
+   * we embed restrictions as a prompt prefix.
+   */
+  private buildToolPolicyPreamble(toolPolicy: { allowed?: string[]; denied?: string[] }): string {
+    const parts: string[] = [];
+    if (toolPolicy.allowed?.length && !toolPolicy.allowed.includes('*')) {
+      parts.push(`TOOL POLICY: You may ONLY use these tools: ${toolPolicy.allowed.join(', ')}.`);
+    }
+    if (toolPolicy.denied?.length) {
+      parts.push(`You must NOT use these tools: ${toolPolicy.denied.join(', ')}.`);
+    }
+    return parts.length > 0 ? parts.join(' ') + '\n\n' : '';
   }
 
   /**
@@ -90,48 +217,53 @@ export class WorkflowStepExecutor {
       'Agent step execution configured'
     );
 
-    // TODO: OpenClaw integration (sessions_spawn)
-    // This is the placeholder for actual session spawning.
-    // When OpenClaw sessions API is integrated, replace this with:
-    //
-    // if (sessionConfig.mode === 'reuse') {
-    //   const lastSessionKey = run.context._sessions?.[step.agent!];
-    //   if (lastSessionKey) {
-    //     // Continue existing session
-    //     const result = await this.continueSession(lastSessionKey, prompt);
-    //   } else {
-    //     // No existing session, fall back to fresh
-    //     const sessionKey = await this.spawnAgent({
-    //       agentId: step.agent!,
-    //       prompt,
-    //       taskId: run.taskId,
-    //       model: agentDef?.model,
-    //       toolFilter: toolPolicyFilter,
-    //       timeout: sessionConfig.timeout,
-    //     });
-    //     run.context._sessions = { ...run.context._sessions, [step.agent!]: sessionKey };
-    //   }
-    // } else {
-    //   // Fresh session
-    //   const sessionKey = await this.spawnAgent({
-    //     agentId: step.agent!,
-    //     prompt,
-    //     taskId: run.taskId,
-    //     model: agentDef?.model,
-    //     toolFilter: toolPolicyFilter,
-    //     timeout: sessionConfig.timeout,
-    //   });
-    //   run.context._sessions = { ...run.context._sessions, [step.agent!]: sessionKey };
-    // }
-    // const result = await this.waitForSession(sessionKey);
-    //
-    // After session completes:
-    // if (sessionConfig.cleanup === 'delete') {
-    //   await this.cleanupSession(sessionKey);
-    // }
+    // Build tool policy preamble (openclaw CLI doesn't support --allowedTools)
+    const toolPreamble = this.buildToolPolicyPreamble(toolPolicyFilter);
+    const fullPrompt = toolPreamble + prompt;
 
-    // Placeholder: Simulate agent execution (Phase 1 only)
-    const result = `Agent ${step.agent} (role: ${agentDef?.role || 'unknown'}) executed step ${step.id}\n\nSession Config:\n- Mode: ${sessionConfig.mode}\n- Context: ${sessionConfig.context}\n- Cleanup: ${sessionConfig.cleanup}\n- Timeout: ${sessionConfig.timeout}s\n\nTool Policy:\n- Allowed: ${toolPolicyFilter.allowed?.join(', ') || 'all'}\n- Denied: ${toolPolicyFilter.denied?.join(', ') || 'none'}\n\nPrompt:\n${prompt}\n\nSTATUS: done\nOUTPUT: Placeholder result`;
+    // Check for existing session (reuse mode)
+    const sessions = (run.context._sessions as Record<string, string>) || {};
+    const existingSessionId = sessionConfig.mode === 'reuse' ? sessions[step.agent!] : undefined;
+
+    // Spawn the real agent via openclaw CLI
+    const execution = await this.spawnAgent({
+      agentId: step.agent!,
+      prompt: fullPrompt,
+      sessionId: existingSessionId,
+      timeout: sessionConfig.timeout,
+      runId: run.id,
+      stepId: step.id,
+    });
+
+    // Log stderr for debugging (non-fatal)
+    if (execution.stderr) {
+      log.warn(
+        { runId: run.id, stepId: step.id, stderr: execution.stderr.slice(0, 500) },
+        'Agent stderr output'
+      );
+    }
+
+    // Store session ID for reuse across steps
+    if (execution.sessionId && sessionConfig.mode === 'reuse') {
+      sessions[step.agent!] = execution.sessionId;
+      run.context._sessions = sessions;
+    }
+
+    // Check exit code — non-zero triggers retry/escalate from WorkflowRunService
+    if (execution.exitCode !== 0) {
+      throw new Error(
+        `Agent ${step.agent} failed (exit ${execution.exitCode}): ${
+          execution.stderr?.slice(0, 200) || execution.output.slice(0, 200)
+        }`
+      );
+    }
+
+    // Session cleanup
+    if (sessionConfig.cleanup === 'delete' && execution.sessionId) {
+      await this.cleanupSession(execution.sessionId);
+    }
+
+    const result = execution.output;
 
     // Parse output
     const parsed = this.parseStepOutput(result, step);
@@ -427,7 +559,19 @@ export class WorkflowStepExecutor {
         const prompt = this.renderTemplate(step.input || '', iterationContext);
 
         // Execute the iteration (spawn agent)
-        const result = `Agent ${step.agent} executed loop iteration ${i + 1}/${iterationCount}\n\nPrompt:\n${prompt}\n\nSTATUS: done\nOUTPUT: Iteration ${i + 1} complete`;
+        const loopExecution = await this.spawnAgent({
+          agentId: step.agent!,
+          prompt,
+          timeout: step.session?.timeout || step.timeout || 600,
+          runId: run.id,
+          stepId: `${step.id}-iter-${i + 1}`,
+        });
+        if (loopExecution.exitCode !== 0) {
+          throw new Error(
+            `Loop iteration ${i + 1} failed (exit ${loopExecution.exitCode}): ${loopExecution.stderr?.slice(0, 200) || ''}`
+          );
+        }
+        const result = loopExecution.output;
 
         // Parse output
         const parsed = this.parseStepOutput(result, step);
@@ -715,8 +859,20 @@ export class WorkflowStepExecutor {
     // Render the input prompt
     const prompt = this.renderTemplate(subStep.input, context);
 
-    // Placeholder: Simulate agent execution
-    const result = `Agent ${subStep.agent} executed sub-step ${subStep.id}\n\nPrompt:\n${prompt}\n\nSTATUS: done\nOUTPUT: Sub-step ${subStep.id} complete`;
+    // Spawn the real agent
+    const execution = await this.spawnAgent({
+      agentId: subStep.agent,
+      prompt,
+      timeout: subStep.timeout || 600,
+      runId: run.id,
+      stepId: `${parentStepId}-${subStep.id}`,
+    });
+    if (execution.exitCode !== 0) {
+      throw new Error(
+        `Sub-step ${subStep.id} failed (exit ${execution.exitCode}): ${execution.stderr?.slice(0, 200) || ''}`
+      );
+    }
+    const result = execution.output;
 
     // Parse output
     const parsed = this.parseStepOutput(result, {

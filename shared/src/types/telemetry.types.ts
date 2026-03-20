@@ -10,7 +10,13 @@ export type TelemetryEventType =
   | 'run.started'
   | 'run.completed'
   | 'run.error'
-  | 'run.tokens';
+  | 'run.tokens'
+  | 'signal.health'
+  | 'signal.completion'
+  | 'signal.dispatch_blocked'
+  | 'signal.generic'
+  | 'signal.directive_receipt'
+  | 'control_plane.normalization';
 
 /** Base telemetry event - all events extend this */
 export interface TelemetryEvent {
@@ -90,6 +96,72 @@ export interface TokenTelemetryEvent extends TelemetryEvent {
   attemptId?: string;
 }
 
+/** VOS signal: health sweep result */
+export interface SignalHealthEvent extends TelemetryEvent {
+  type: 'signal.health';
+  agent: string;
+  severity: string;
+  summary: string;
+  healthClass: string;
+  venture?: string;
+  payload?: Record<string, unknown>;
+}
+
+/** VOS signal: completion verification result */
+export interface SignalCompletionEvent extends TelemetryEvent {
+  type: 'signal.completion';
+  agent: string;
+  severity: string;
+  summary: string;
+  classification: string;
+  missingSurfaces?: string[];
+  venture?: string;
+  payload?: Record<string, unknown>;
+}
+
+/** VOS signal: dispatch quality gate block */
+export interface SignalDispatchBlockedEvent extends TelemetryEvent {
+  type: 'signal.dispatch_blocked';
+  agent: string;
+  severity: string;
+  summary: string;
+  antiPatterns?: string[];
+  venture?: string;
+  payload?: Record<string, unknown>;
+}
+
+/** VOS signal: generic catch-all for unmapped event types */
+export interface SignalGenericEvent extends TelemetryEvent {
+  type: 'signal.generic';
+  agent: string;
+  severity: string;
+  summary: string;
+  vosEventType: string;
+  venture?: string;
+  payload?: Record<string, unknown>;
+}
+
+/** Control-plane normalization event — emitted when ghost state is cleared */
+export interface ControlPlaneNormalizationEvent extends TelemetryEvent {
+  type: 'control_plane.normalization';
+  /** Agent whose pointer was normalized */
+  agent: string;
+  /** Task that was pointed to */
+  taskId: string;
+  /** How the normalization happened */
+  trigger: 'atomic_completion' | 'stale_autoclear' | 'manual';
+  /** Task status at time of normalization */
+  taskStatus: string;
+  /** Minutes the agent appeared busy after the task was actually done */
+  ghostBusyMinutes: number;
+  /** Minutes between task completion and registry pointer clear */
+  closureLagMinutes: number;
+  /** ISO timestamp when the task actually completed */
+  taskCompletedAt: string;
+  /** ISO timestamp when the registry pointer was cleared */
+  pointerClearedAt: string;
+}
+
 /** Union type for all telemetry events */
 export type AnyTelemetryEvent =
   | TaskTelemetryEvent
@@ -97,20 +169,25 @@ export type AnyTelemetryEvent =
   | RunStartedEvent
   | RunCompletedEvent
   | RunErrorEvent
-  | TokenTelemetryEvent;
+  | TokenTelemetryEvent
+  | SignalHealthEvent
+  | SignalCompletionEvent
+  | SignalDispatchBlockedEvent
+  | SignalGenericEvent
+  | ControlPlaneNormalizationEvent;
 
 /** Telemetry configuration */
 export interface TelemetryConfig {
   enabled: boolean;
   retention: number; // Days to retain events
-  traces?: boolean;  // Optional trace collection (future)
+  traces?: boolean; // Optional trace collection (future)
 }
 
 /** Query options for fetching events */
 export interface TelemetryQueryOptions {
   type?: TelemetryEventType | TelemetryEventType[];
-  since?: string;  // ISO timestamp
-  until?: string;  // ISO timestamp
+  since?: string; // ISO timestamp
+  until?: string; // ISO timestamp
   taskId?: string;
   project?: string;
   limit?: number;

@@ -22,7 +22,9 @@ export type GateType =
   | 'require-time-tracked' // Time tracking must have entries
   | 'require-closing-comment' // Task must have at least one comment
   | 'require-subtasks-complete' // All subtasks must be completed
-  | 'require-blocker-reason'; // blockedReason must be set (for blocked status)
+  | 'require-blocker-reason' // blockedReason must be set (for blocked status)
+  | 'require-acceptance-criteria' // Task must have at least one acceptance criterion
+  | 'require-deliverables'; // Task must have at least one deliverable/artifact target
 
 /**
  * A pre-transition gate configuration.
@@ -176,7 +178,16 @@ export const DEFAULT_TRANSITION_HOOKS_CONFIG: TransitionHooksConfig = {
       enabled: true,
       from: 'todo',
       to: 'in-progress',
-      gates: [],
+      gates: [
+        {
+          id: 'gate-acceptance-criteria',
+          name: 'Acceptance criteria required',
+          type: 'require-acceptance-criteria',
+          enabled: false, // Disabled by default
+          errorMessage:
+            'Dispatch blocked: missing acceptance criteria. Define what "done" looks like before starting work.',
+        },
+      ],
       actions: [
         {
           id: 'action-auto-start-timer',

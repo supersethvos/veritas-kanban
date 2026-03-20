@@ -7,6 +7,7 @@ const serviceMock = {
   getExecutiveOverview: vi.fn(),
   getVentureCoverageView: vi.fn(),
   getCertificationPipeline: vi.fn(),
+  getAgentCertificationView: vi.fn(),
   getWorkflowDetail: vi.fn(),
 };
 
@@ -113,6 +114,24 @@ describe('founder-surface routes', () => {
     recently_certified: [],
     under_review: [],
     recently_decertified: [],
+    updated_at: '2026-03-17T06:00:00.000Z',
+  };
+
+  const agentCertificationPayload = {
+    summaries: [
+      {
+        agent_id: 'MAYA',
+        certification_tier: 'certified_operator',
+        workflow_execution_score: 92,
+        operator_leverage_score: 78,
+        reliability_score: 90,
+        status_reason:
+          'Execution evidence is strong, operator leverage is verified, and reliability discipline is clean enough for broader trust.',
+        last_evaluated_at: '2026-03-17T06:00:00.000Z',
+        supporting_workflow_ids: ['wf_1'],
+        supporting_receipt_ids: ['oir_1'],
+      },
+    ],
     updated_at: '2026-03-17T06:00:00.000Z',
   };
 
@@ -239,6 +258,24 @@ describe('founder-surface routes', () => {
       recently_certified: [],
       under_review: [],
       recently_decertified: [],
+    });
+  });
+
+  it('returns agent certification payloads', async () => {
+    serviceMock.getAgentCertificationView.mockResolvedValue(agentCertificationPayload);
+
+    const response = await request(createApp()).get('/api/founder-surface/agent-certification');
+
+    expect(response.status).toBe(200);
+    expect(serviceMock.getAgentCertificationView).toHaveBeenCalledTimes(1);
+    expect(response.body).toMatchObject({
+      summaries: [
+        expect.objectContaining({
+          agent_id: 'MAYA',
+          certification_tier: 'certified_operator',
+          supporting_receipt_ids: ['oir_1'],
+        }),
+      ],
     });
   });
 

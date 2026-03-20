@@ -32,7 +32,7 @@ export function SessionMetrics({ period }: SessionMetricsProps) {
     // Estimate from available metrics
     const total = metrics.tasks.total || 0;
     const successful = metrics.tasks.completed || 0;
-    const failed = Math.floor((total * 0.05)); // Estimate 5% failure rate
+    const failed = Math.floor(total * 0.05); // Estimate 5% failure rate
     const abandoned = Math.max(0, total - successful - failed);
     const avgDuration = metrics.duration?.avgMs || 0;
     const successRate = total > 0 ? (successful / total) * 100 : 0;
@@ -60,7 +60,13 @@ export function SessionMetrics({ period }: SessionMetricsProps) {
           <div className="text-[10px] text-muted-foreground">Total Runs</div>
         </div>
         <div>
-          <div className="text-2xl font-bold" style={{ color: stats.successRate > 80 ? '#22c55e' : stats.successRate > 50 ? '#f59e0b' : '#ef4444' }}>
+          <div
+            className="text-2xl font-bold"
+            style={{
+              color:
+                stats.successRate > 80 ? '#22c55e' : stats.successRate > 50 ? '#f59e0b' : '#ef4444',
+            }}
+          >
             {Math.round(stats.successRate)}%
           </div>
           <div className="text-[10px] text-muted-foreground">Success Rate</div>
@@ -77,7 +83,7 @@ export function SessionMetrics({ period }: SessionMetricsProps) {
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <XCircle className="w-3 h-3 text-red-500" />
+            <XCircle className="w-3 h-3 text-primal-red" />
             Failed
           </span>
           <span className="font-medium">{stats.failed}</span>

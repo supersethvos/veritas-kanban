@@ -43,14 +43,14 @@ export function getProjectColor(projects: ProjectConfig[], projectId: string): s
  * Available background colors for project badges
  */
 export const AVAILABLE_PROJECT_COLORS = [
-  { value: 'bg-blue-500/20', label: 'Blue' },
+  { value: 'bg-primal-gold/20', label: 'Gold' },
   { value: 'bg-green-500/20', label: 'Green' },
-  { value: 'bg-purple-500/20', label: 'Purple' },
-  { value: 'bg-orange-500/20', label: 'Orange' },
-  { value: 'bg-pink-500/20', label: 'Pink' },
-  { value: 'bg-cyan-500/20', label: 'Cyan' },
+  { value: 'bg-primal-red/20', label: 'Red' },
   { value: 'bg-amber-500/20', label: 'Amber' },
-  { value: 'bg-rose-500/20', label: 'Rose' },
-  { value: 'bg-indigo-500/20', label: 'Indigo' },
-  { value: 'bg-teal-500/20', label: 'Teal' },
+  { value: 'bg-primal-gray-mid/20', label: 'Gray' },
+  { value: 'bg-primal-gray-light/20', label: 'Silver' },
+  { value: 'bg-primal-muted/20', label: 'Muted' },
+  { value: 'bg-emerald-500/20', label: 'Emerald' },
+  { value: 'bg-primal-rule/30', label: 'Dark' },
+  { value: 'bg-yellow-500/20', label: 'Yellow' },
 ];

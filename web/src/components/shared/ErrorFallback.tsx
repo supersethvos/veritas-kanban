@@ -20,8 +20,8 @@ function PageFallback({ error, onRetry: _onRetry }: Omit<ErrorFallbackProps, 'le
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-6">
       <div className="max-w-lg w-full text-center space-y-6">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
-          <AlertCircle className="h-8 w-8 text-red-400" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primal-red/10">
+          <AlertCircle className="h-8 w-8 text-primal-red" />
         </div>
 
         <div className="space-y-2">
@@ -47,7 +47,7 @@ function PageFallback({ error, onRetry: _onRetry }: Omit<ErrorFallbackProps, 'le
 
             {showDetails && (
               <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border text-left">
-                <code className="text-xs text-red-400 break-all whitespace-pre-wrap">
+                <code className="text-xs text-primal-red break-all whitespace-pre-wrap">
                   {error.message}
                 </code>
               </div>
@@ -78,7 +78,7 @@ function SectionFallback({ error, onRetry }: Omit<ErrorFallbackProps, 'level'>) 
     <div className="flex items-center justify-center min-h-[200px] p-6">
       <div className="max-w-md w-full rounded-lg border border-border bg-card p-6 space-y-4">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-primal-red flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0 space-y-2">
             <h3 className="text-base font-semibold text-foreground">
               This section encountered an error
@@ -104,7 +104,7 @@ function SectionFallback({ error, onRetry }: Omit<ErrorFallbackProps, 'level'>) 
 
                 {showDetails && (
                   <div className="mt-2 p-3 rounded bg-muted/50 border border-border">
-                    <code className="text-xs text-red-400 break-all whitespace-pre-wrap">
+                    <code className="text-xs text-primal-red break-all whitespace-pre-wrap">
                       {error.message}
                     </code>
                   </div>
@@ -138,7 +138,7 @@ function SectionFallback({ error, onRetry }: Omit<ErrorFallbackProps, 'level'>) 
 function WidgetFallback({ onRetry }: Omit<ErrorFallbackProps, 'level'>) {
   return (
     <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-      <AlertCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+      <AlertCircle className="h-3.5 w-3.5 text-primal-red flex-shrink-0" />
       <span>Failed to render</span>
       <button onClick={onRetry} className="text-xs text-primary hover:underline underline-offset-2">
         Retry

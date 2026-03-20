@@ -28,12 +28,12 @@ const statusConfig: Record<
   },
   'in-progress': {
     icon: <Play className="h-4 w-4" />,
-    color: 'text-blue-500',
+    color: 'text-primal-gold',
     label: 'In Progress',
   },
   blocked: {
     icon: <Ban className="h-4 w-4" />,
-    color: 'text-red-500',
+    color: 'text-primal-red',
     label: 'Blocked',
   },
   done: {

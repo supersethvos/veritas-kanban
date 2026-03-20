@@ -8,7 +8,11 @@ interface TemplateVariableInputsProps {
   onChange: (name: string, value: string) => void;
 }
 
-export function TemplateVariableInputs({ variables, values, onChange }: TemplateVariableInputsProps) {
+export function TemplateVariableInputs({
+  variables,
+  values,
+  onChange,
+}: TemplateVariableInputsProps) {
   if (variables.length === 0) {
     return null;
   }
@@ -16,7 +20,7 @@ export function TemplateVariableInputs({ variables, values, onChange }: Template
   return (
     <div className="grid gap-3 border rounded-md p-3 bg-muted/30">
       <div className="flex items-center gap-2">
-        <AlertCircle className="h-4 w-4 text-blue-500" />
+        <AlertCircle className="h-4 w-4 text-primal-gold" />
         <Label className="text-sm font-medium">Template Variables</Label>
       </div>
       {variables.map((varName) => (

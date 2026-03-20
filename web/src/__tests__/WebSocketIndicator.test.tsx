@@ -65,6 +65,6 @@ describe('WebSocketIndicator', () => {
     expect(button.getAttribute('aria-label')).toBe('WebSocket disconnected');
 
     const dot = button.querySelector('span');
-    expect(dot?.className).toContain('bg-red-500');
+    expect(dot?.className).toContain('bg-primal-red');
   });
 });

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   AlertDialog,
@@ -24,6 +25,10 @@ import {
   User,
   Trash2,
   Download,
+  Mic,
+  MicOff,
+  X,
+  Volume2,
 } from 'lucide-react';
 import {
   useChatSession,
@@ -33,7 +38,11 @@ import {
   useChatSessions,
 } from '@/hooks/useChat';
 import { useTask } from '@/hooks/useTasks';
+import { useRealtimeVoice } from '@/hooks/useRealtimeVoice';
+import { realtimeApi } from '@/lib/api/realtime';
+import { chatApi } from '@/lib/api/chat';
 import type { ChatMessage } from '@veritas-kanban/shared';
+import { DispatchCard, type DispatchIntent } from './DispatchCard';
 
 interface ChatPanelProps {
   open: boolean;
@@ -50,7 +59,81 @@ export function ChatPanel({ open, onOpenChange, taskId }: ChatPanelProps) {
   const { data: session } = useChatSession(currentSessionId);
   const { mutate: sendChatMessage, isPending } = useSendChatMessage();
   const { mutate: deleteChatSession } = useDeleteChatSession();
-  const { streamingMessage } = useChatStream(currentSessionId);
+  const { streamingMessage, isThinking } = useChatStream(currentSessionId);
+
+  // Realtime voice steering
+  const { data: realtimeStatus } = useQuery({
+    queryKey: ['realtime', 'status'],
+    queryFn: realtimeApi.checkStatus,
+    staleTime: 60_000,
+  });
+
+  const queryClient = useQueryClient();
+
+  const handleVoiceExchange = useCallback(
+    (exchange: { userText: string; agentText: string }) => {
+      // Persist both user + agent voice transcripts without triggering gateway
+      if (exchange.userText && exchange.agentText) {
+        chatApi
+          .saveVoiceTranscript({
+            sessionId: currentSessionId,
+            taskId,
+            userText: exchange.userText,
+            agentText: exchange.agentText,
+          })
+          .then((result) => {
+            // Update session ID if new session was created
+            if (result.sessionId && result.sessionId !== currentSessionId) {
+              setCurrentSessionId(result.sessionId);
+            }
+            // Refetch session to show new messages
+            queryClient.invalidateQueries({ queryKey: ['chat', 'sessions', result.sessionId] });
+          });
+      }
+    },
+    [currentSessionId, taskId, queryClient]
+  );
+
+  const handleAskSeth = useCallback(
+    (question: string) => {
+      // Route deep questions to SETH via existing chat pipeline — medium thinking for voice latency
+      sendChatMessage(
+        {
+          sessionId: currentSessionId,
+          taskId,
+          message: question,
+          mode: 'ask',
+          thinkingLevel: 'medium',
+        },
+        {
+          onSuccess: (response) => {
+            setCurrentSessionId(response.sessionId);
+          },
+        }
+      );
+    },
+    [currentSessionId, taskId, sendChatMessage]
+  );
+
+  const voice = useRealtimeVoice({
+    onExchange: handleVoiceExchange,
+    onAskSeth: handleAskSeth,
+  });
+
+  // When SETH responds to a deep-path question, speak it back
+  useEffect(() => {
+    if (voice.state === 'connected' && streamingMessage === null && session?.messages) {
+      const lastMsg = session.messages[session.messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg.content) {
+        // Check if this is a fresh SETH response (within last 5 seconds)
+        const msgTime = new Date(lastMsg.timestamp).getTime();
+        const now = Date.now();
+        if (now - msgTime < 5000) {
+          voice.speakSethResponse(lastMsg.content);
+        }
+      }
+    }
+  }, [session?.messages, voice.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,7 +145,7 @@ export function ChatPanel({ open, onOpenChange, taskId }: ChatPanelProps) {
     if (shouldAutoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [session?.messages, streamingMessage, shouldAutoScroll]);
+  }, [session?.messages, streamingMessage, isThinking, shouldAutoScroll]);
 
   // Detect manual scroll-up to pause auto-scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -226,7 +309,21 @@ export function ChatPanel({ open, onOpenChange, taskId }: ChatPanelProps) {
                 isStreaming
               />
             )}
-            {(!session || session.messages.length === 0) && !streamingMessage && (
+            {isThinking && !streamingMessage && (
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+                <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            {(!session || session.messages.length === 0) && !streamingMessage && !isThinking && (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">
@@ -240,49 +337,135 @@ export function ChatPanel({ open, onOpenChange, taskId }: ChatPanelProps) {
 
         {/* Input Area */}
         <div className="border-t border-border p-4 flex-shrink-0 space-y-3">
-          <div className="flex items-center gap-2">
-            <Input
-              ref={inputRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type a message..."
-              disabled={isPending}
-              className="flex-1"
-              autoFocus
-            />
-            <Button onClick={handleSend} disabled={!message.trim() || isPending} size="icon">
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          {voice.state === 'connected' ? (
+            /* ── Voice Active Panel ─────────────────────────── */
+            <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-orange-400">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+                  </span>
+                  SETH — Live
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={voice.toggleMute}
+                  >
+                    {voice.isMuted ? (
+                      <MicOff className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <Mic className="h-3.5 w-3.5 text-orange-400" />
+                    )}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={voice.stop}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
 
-          {/* Mode Toggle */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Mode:</span>
-            <Button
-              variant={mode === 'ask' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setMode('ask')}
-              className="h-7 text-xs"
-            >
-              Ask
-            </Button>
-            <Button
-              variant={mode === 'build' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setMode('build')}
-              className="h-7 text-xs"
-            >
-              Build
-            </Button>
-            <span className="text-muted-foreground ml-1">
-              {mode === 'ask' ? '· Read-only queries' : '· Changes, files, commands'}
-            </span>
-          </div>
+              {/* Live transcripts */}
+              <div className="space-y-2 text-sm">
+                {voice.isUserSpeaking && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="italic">Listening...</span>
+                  </div>
+                )}
+                {voice.userTranscript && (
+                  <div className="flex items-start gap-2">
+                    <User className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span className="text-foreground">{voice.userTranscript}</span>
+                  </div>
+                )}
+                {voice.agentTranscript && (
+                  <div className="flex items-start gap-2">
+                    <Volume2 className="h-4 w-4 text-orange-400 mt-0.5 shrink-0" />
+                    <span className="text-foreground">{voice.agentTranscript}</span>
+                  </div>
+                )}
+                {!voice.isUserSpeaking && !voice.userTranscript && !voice.agentTranscript && (
+                  <div className="text-muted-foreground text-xs text-center py-2">
+                    Speak a command or ask a question...
+                  </div>
+                )}
+              </div>
+
+              {/* Dispatch card from voice response */}
+              {voice.agentTranscript &&
+                (() => {
+                  const intent = extractDispatchIntent(voice.agentTranscript);
+                  return intent ? <DispatchCard intent={intent} /> : null;
+                })()}
+            </div>
+          ) : (
+            /* ── Normal Text Input ──────────────────────────── */
+            <div className="flex items-center gap-2">
+              <Input
+                ref={inputRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Type a message..."
+                disabled={isPending}
+                className="flex-1"
+                autoFocus
+              />
+              {/* Mic button — only visible if Realtime API is configured */}
+              {realtimeStatus?.available && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={voice.start}
+                  disabled={voice.state === 'connecting'}
+                  className="shrink-0"
+                  title="Start voice steering"
+                >
+                  {voice.state === 'connecting' ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-orange-400" />
+                  ) : (
+                    <Mic className="h-4 w-4 text-muted-foreground hover:text-orange-400 transition-colors" />
+                  )}
+                </Button>
+              )}
+              <Button onClick={handleSend} disabled={!message.trim() || isPending} size="icon">
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Mode Toggle — hidden during voice mode */}
+          {voice.state !== 'connected' && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Mode:</span>
+              <Button
+                variant={mode === 'ask' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMode('ask')}
+                className="h-7 text-xs"
+              >
+                Ask
+              </Button>
+              <Button
+                variant={mode === 'build' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMode('build')}
+                className="h-7 text-xs"
+              >
+                Build
+              </Button>
+              <span className="text-muted-foreground ml-1">
+                {mode === 'ask' ? '· Read-only queries' : '· Changes, files, commands'}
+              </span>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -292,6 +475,28 @@ export function ChatPanel({ open, onOpenChange, taskId }: ChatPanelProps) {
 interface ChatMessageBubbleProps {
   message: ChatMessage | { id: string; role: string; content: string; timestamp: string };
   isStreaming?: boolean;
+}
+
+const DISPATCH_MARKER_RE = /\[DISPATCH:\s*(\w+)(?:\s+([^\]]+))?\]/i;
+
+/**
+ * Detect dispatch intent in an assistant message.
+ * Only triggers on structured [DISPATCH: verb target] markers
+ * explicitly emitted by agents — no keyword guessing.
+ */
+function extractDispatchIntent(content: string): DispatchIntent | null {
+  const match = content.match(DISPATCH_MARKER_RE);
+  if (!match) return null;
+
+  const verb = match[1].toLowerCase();
+  const target = match[2]?.trim();
+
+  return {
+    verb: verb as DispatchIntent['verb'],
+    targetAgent: target || 'SETH-LEAD',
+    label: match[0],
+    message: target ? `${verb} ${target}` : verb,
+  };
 }
 
 function ChatMessageBubble({ message, isStreaming }: ChatMessageBubbleProps) {
@@ -334,14 +539,25 @@ function ChatMessageBubble({ message, isStreaming }: ChatMessageBubbleProps) {
           {isStreaming && <span className="inline-block w-1 h-4 bg-current animate-pulse ml-1" />}
         </div>
 
+        {/* Inline dispatch card — detected action intents in assistant messages */}
+        {!isUser &&
+          !isStreaming &&
+          (() => {
+            const intent = extractDispatchIntent(message.content);
+            return intent ? <DispatchCard intent={intent} /> : null;
+          })()}
+
         {/* Tool calls */}
         {'toolCalls' in message && message.toolCalls && message.toolCalls.length > 0 && (
           <div className="space-y-1">
             {message.toolCalls.map((tool, idx) => (
-              <div key={idx} className="border border-border rounded bg-zinc-950 overflow-hidden">
+              <div
+                key={idx}
+                className="border border-border rounded bg-primal-card overflow-hidden"
+              >
                 <button
                   onClick={() => toggleTool(idx)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-zinc-900 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-primal-card transition-colors"
                 >
                   {expandedTools.has(idx) ? (
                     <ChevronDown className="h-3 w-3" />
@@ -354,14 +570,14 @@ function ChatMessageBubble({ message, isStreaming }: ChatMessageBubbleProps) {
                   <div className="px-3 pb-2 space-y-2 text-xs font-mono">
                     <div>
                       <div className="text-muted-foreground mb-1">Input:</div>
-                      <pre className="text-zinc-300 whitespace-pre-wrap break-all">
+                      <pre className="text-primal-gray-light/80 whitespace-pre-wrap break-all">
                         {tool.input}
                       </pre>
                     </div>
                     {tool.output && (
                       <div>
                         <div className="text-muted-foreground mb-1">Output:</div>
-                        <pre className="text-zinc-300 whitespace-pre-wrap break-all">
+                        <pre className="text-primal-gray-light/80 whitespace-pre-wrap break-all">
                           {tool.output}
                         </pre>
                       </div>
@@ -373,8 +589,9 @@ function ChatMessageBubble({ message, isStreaming }: ChatMessageBubbleProps) {
           </div>
         )}
 
-        {/* Timestamp */}
-        <div className="text-xs text-muted-foreground px-1">
+        {/* Timestamp + voice badge */}
+        <div className="text-xs text-muted-foreground px-1 flex items-center gap-1">
+          {message.content.startsWith('[voice]') && <Mic className="h-3 w-3 text-orange-400" />}
           {new Date(message.timestamp).toLocaleTimeString()}
         </div>
       </div>
@@ -405,9 +622,9 @@ function MarkdownContent({ content }: { content: string }) {
           const code = lines.slice(1, -1).join('\n');
 
           return (
-            <pre key={idx} className="bg-zinc-950 rounded p-2 overflow-x-auto text-xs">
+            <pre key={idx} className="bg-primal-card rounded p-2 overflow-x-auto text-xs">
               {language && <div className="text-muted-foreground mb-1">{language}</div>}
-              <code className="text-zinc-300">{code}</code>
+              <code className="text-primal-gray-light/80">{code}</code>
             </pre>
           );
         }
@@ -415,7 +632,7 @@ function MarkdownContent({ content }: { content: string }) {
         // Inline code
         if (part.startsWith('`') && part.endsWith('`')) {
           return (
-            <code key={idx} className="bg-zinc-800 px-1 py-0.5 rounded text-xs">
+            <code key={idx} className="bg-primal-rule-light px-1 py-0.5 rounded text-xs">
               {part.slice(1, -1)}
             </code>
           );

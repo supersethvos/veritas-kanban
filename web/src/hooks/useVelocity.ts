@@ -58,7 +58,7 @@ export function getTrendColor(trend: VelocityTrend): string {
     case 'accelerating':
       return 'text-green-500';
     case 'slowing':
-      return 'text-red-500';
+      return 'text-primal-red';
     default:
       return 'text-muted-foreground';
   }

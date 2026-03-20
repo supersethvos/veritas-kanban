@@ -96,16 +96,16 @@ export function getTypeIconName(types: TaskTypeConfig[], typeId: string): string
  * Available border colors for task types
  */
 export const AVAILABLE_COLORS = [
-  { value: 'border-l-violet-500', label: 'Violet' },
-  { value: 'border-l-cyan-500', label: 'Cyan' },
-  { value: 'border-l-orange-500', label: 'Orange' },
+  { value: 'border-l-primal-gold', label: 'Gold' },
+  { value: 'border-l-primal-gray-mid', label: 'Gray' },
+  { value: 'border-l-amber-500', label: 'Orange' },
   { value: 'border-l-emerald-500', label: 'Emerald' },
-  { value: 'border-l-fuchsia-500', label: 'Pink' },
+  { value: 'border-l-primal-gray-light', label: 'Silver' },
   { value: 'border-l-amber-500', label: 'Amber' },
-  { value: 'border-l-blue-700', label: 'Blue' },
+  { value: 'border-l-primal-gold', label: 'Gold Dark' },
   { value: 'border-l-green-700', label: 'Green' },
-  { value: 'border-l-red-500', label: 'Red' },
-  { value: 'border-l-purple-500', label: 'Purple' },
+  { value: 'border-l-primal-red', label: 'Red' },
+  { value: 'border-l-primal-gold', label: 'Gold' },
   { value: 'border-l-yellow-400', label: 'Yellow' },
   { value: 'border-l-amber-800', label: 'Brown' },
 ];

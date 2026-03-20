@@ -12,14 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-  CheckCircle,
-  XCircle,
-  RefreshCcw,
-  MessageSquare,
-  GitMerge,
-  Loader2,
-} from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCcw, MessageSquare, GitMerge, Loader2 } from 'lucide-react';
 import { useMergeWorktree } from '@/hooks/useWorktree';
 import type { Task, ReviewDecision, ReviewState } from '@veritas-kanban/shared';
 import { cn } from '@/lib/utils';
@@ -30,8 +23,11 @@ interface ReviewPanelProps {
   onMergeComplete?: () => void;
 }
 
-const decisionStyles: Record<ReviewDecision, { icon: React.ReactNode; label: string; className: string }> = {
-  'approved': {
+const decisionStyles: Record<
+  ReviewDecision,
+  { icon: React.ReactNode; label: string; className: string }
+> = {
+  approved: {
     icon: <CheckCircle className="h-4 w-4" />,
     label: 'Approved',
     className: 'bg-green-500/10 text-green-600 border-green-500/30',
@@ -41,10 +37,10 @@ const decisionStyles: Record<ReviewDecision, { icon: React.ReactNode; label: str
     label: 'Changes Requested',
     className: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
   },
-  'rejected': {
+  rejected: {
     icon: <XCircle className="h-4 w-4" />,
     label: 'Rejected',
-    className: 'bg-red-500/10 text-red-600 border-red-500/30',
+    className: 'bg-primal-red/10 text-primal-red border-primal-red/30',
   },
 };
 
@@ -99,20 +95,14 @@ export function ReviewPanel({ task, onReview, onMergeComplete }: ReviewPanelProp
         >
           {decisionStyles[currentReview.decision].icon}
           <div className="flex-1">
-            <div className="font-medium">
-              {decisionStyles[currentReview.decision].label}
-            </div>
+            <div className="font-medium">{decisionStyles[currentReview.decision].label}</div>
             {currentReview.decidedAt && (
               <div className="text-xs opacity-75">
                 {new Date(currentReview.decidedAt).toLocaleString()}
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onReview({})}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onReview({})}>
             Clear
           </Button>
         </div>
@@ -128,7 +118,10 @@ export function ReviewPanel({ task, onReview, onMergeComplete }: ReviewPanelProp
       {isApproved && hasWorktree && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="w-full bg-green-600 hover:bg-green-700" disabled={mergeWorktree.isPending}>
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={mergeWorktree.isPending}
+            >
               {mergeWorktree.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -144,9 +137,12 @@ export function ReviewPanel({ task, onReview, onMergeComplete }: ReviewPanelProp
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Merge changes to {task.git?.baseBranch || 'main'}?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Merge changes to {task.git?.baseBranch || 'main'}?
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will merge the branch <code className="px-1 bg-muted rounded">{task.git?.branch}</code> into{' '}
+                This will merge the branch{' '}
+                <code className="px-1 bg-muted rounded">{task.git?.branch}</code> into{' '}
                 <code className="px-1 bg-muted rounded">{task.git?.baseBranch || 'main'}</code>,
                 delete the worktree, and mark this task as done.
               </AlertDialogDescription>

@@ -306,7 +306,7 @@ export function ApplyTemplateDialog({
           {showHelp && (
             <div className="mt-2 p-3 rounded-md bg-muted/50 border border-muted-foreground/20 text-sm space-y-3">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-4 w-4 text-primal-gold mt-0.5 flex-shrink-0" />
                 <div className="space-y-2">
                   <p className="font-medium text-sm">Apply Template Guide</p>
 
@@ -415,7 +415,7 @@ export function ApplyTemplateDialog({
           {requiredCustomVars.length > 0 && (
             <div className="grid gap-3 border rounded-md p-3 bg-muted/30">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-500" />
+                <AlertCircle className="h-4 w-4 text-primal-gold" />
                 <Label className="text-sm font-medium">Template Variables</Label>
               </div>
               {requiredCustomVars.map((varName) => (
@@ -454,7 +454,7 @@ export function ApplyTemplateDialog({
           {mergePreview && mergePreview.fields.length > 0 && (
             <div className="border rounded-md p-3 bg-muted/30 space-y-3">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-500" />
+                <AlertCircle className="h-4 w-4 text-primal-gold" />
                 <Label className="text-sm font-medium">Changes Preview</Label>
               </div>
 
@@ -464,8 +464,8 @@ export function ApplyTemplateDialog({
                     {field.label}
                   </div>
                   <div className="flex items-start gap-2 mt-1">
-                    <Minus className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-red-500/80 line-through flex-1">
+                    <Minus className="h-3 w-3 text-primal-red mt-0.5 flex-shrink-0" />
+                    <span className="text-primal-red/80 line-through flex-1">
                       {field.before || '(empty)'}
                     </span>
                   </div>
@@ -482,7 +482,7 @@ export function ApplyTemplateDialog({
                     Subtasks
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Plus className="h-3 w-3 text-blue-500" />
+                    <Plus className="h-3 w-3 text-primal-gold" />
                     <span className="text-sm">
                       Will add {mergePreview.subtasksAdded} subtasks to existing{' '}
                       {mergePreview.existingSubtasks}

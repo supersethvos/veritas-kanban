@@ -23,15 +23,15 @@ interface SquadChatPanelProps {
 // Agent colors for visual distinction
 const agentColors: Record<string, string> = {
   Human: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', // Human user - distinct green
-  VERITAS: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  TARS: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  VERITAS: 'bg-primal-gold/20 text-primal-gold border-primal-gold/30',
+  TARS: 'bg-primal-gold/20 text-primal-gold border-primal-gold/30',
   CASE: 'bg-green-500/20 text-green-400 border-green-500/30',
-  Ava: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-  'R2-D2': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  'K-2SO': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  Ava: 'bg-primal-gray-light/20 text-primal-gray-light border-primal-gray-light/30',
+  'R2-D2': 'bg-primal-gray-mid/20 text-primal-gray-mid border-primal-gray-mid/30',
+  'K-2SO': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   MAX: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  'Johnny 5': 'bg-red-500/20 text-red-400 border-red-500/30',
-  Bishop: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  'Johnny 5': 'bg-primal-red/20 text-primal-red border-primal-red/30',
+  Bishop: 'bg-primal-muted/20 text-primal-muted border-primal-muted/30',
   Marvin: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
 };
 

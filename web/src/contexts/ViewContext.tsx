@@ -1,6 +1,15 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
-export type AppView = 'board' | 'activity' | 'backlog' | 'archive' | 'templates' | 'workflows';
+export type AppView =
+  | 'founder-board'
+  | 'cockpit'
+  | 'autonomy'
+  | 'board'
+  | 'activity'
+  | 'backlog'
+  | 'archive'
+  | 'templates'
+  | 'workflows';
 
 interface ViewContextValue {
   view: AppView;
@@ -13,7 +22,7 @@ interface ViewContextValue {
 }
 
 const ViewContext = createContext<ViewContextValue>({
-  view: 'board',
+  view: 'founder-board',
   setView: () => {},
   navigateToTask: () => {},
   pendingTaskId: null,
@@ -21,7 +30,7 @@ const ViewContext = createContext<ViewContextValue>({
 });
 
 export function ViewProvider({ children }: { children: ReactNode }) {
-  const [view, setView] = useState<AppView>('board');
+  const [view, setView] = useState<AppView>('founder-board');
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
 
   const navigateToTask = useCallback((taskId: string) => {

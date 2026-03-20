@@ -17,34 +17,43 @@ interface BlockedReasonSectionProps {
   readOnly?: boolean;
 }
 
-const BLOCKED_CATEGORIES: { value: BlockedCategory; label: string; icon: React.ReactNode; description: string }[] = [
-  { 
-    value: 'waiting-on-feedback', 
-    label: 'Waiting on Feedback', 
+const BLOCKED_CATEGORIES: {
+  value: BlockedCategory;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}[] = [
+  {
+    value: 'waiting-on-feedback',
+    label: 'Waiting on Feedback',
     icon: <MessageSquare className="h-4 w-4" />,
     description: 'Blocked waiting for input from someone',
   },
-  { 
-    value: 'technical-snag', 
-    label: 'Technical Snag', 
+  {
+    value: 'technical-snag',
+    label: 'Technical Snag',
     icon: <Wrench className="h-4 w-4" />,
     description: 'Blocked by a technical issue or bug',
   },
-  { 
-    value: 'prerequisite', 
-    label: 'Prerequisite', 
+  {
+    value: 'prerequisite',
+    label: 'Prerequisite',
     icon: <Link2 className="h-4 w-4" />,
     description: 'Blocked by another task that must complete first',
   },
-  { 
-    value: 'other', 
-    label: 'Other', 
+  {
+    value: 'other',
+    label: 'Other',
     icon: <HelpCircle className="h-4 w-4" />,
     description: 'Blocked for another reason',
   },
 ];
 
-export function BlockedReasonSection({ task, onUpdate, readOnly = false }: BlockedReasonSectionProps) {
+export function BlockedReasonSection({
+  task,
+  onUpdate,
+  readOnly = false,
+}: BlockedReasonSectionProps) {
   // Only show when status is blocked
   if (task.status !== 'blocked') {
     return null;
@@ -76,21 +85,21 @@ export function BlockedReasonSection({ task, onUpdate, readOnly = false }: Block
   };
 
   const getCategoryInfo = (category: BlockedCategory) => {
-    return BLOCKED_CATEGORIES.find(c => c.value === category);
+    return BLOCKED_CATEGORIES.find((c) => c.value === category);
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Ban className="h-4 w-4 text-red-500" />
+        <Ban className="h-4 w-4 text-primal-red" />
         <Label className="text-muted-foreground font-medium">Blocked Reason</Label>
       </div>
 
       {readOnly ? (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 space-y-2">
+        <div className="bg-primal-red/10 border border-primal-red/20 rounded-md p-3 space-y-2">
           {currentCategory ? (
             <>
-              <div className="flex items-center gap-2 text-red-400">
+              <div className="flex items-center gap-2 text-primal-red">
                 {getCategoryInfo(currentCategory)?.icon}
                 <span className="font-medium">{getCategoryInfo(currentCategory)?.label}</span>
               </div>

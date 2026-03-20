@@ -92,14 +92,14 @@ function MetricCard({
     default: 'bg-muted/50',
     success: 'bg-green-500/10 border-green-500/20',
     warning: 'bg-yellow-500/10 border-yellow-500/20',
-    error: 'bg-red-500/10 border-red-500/20',
+    error: 'bg-primal-red/10 border-primal-red/20',
   };
 
   const iconClasses = {
     default: 'text-muted-foreground',
     success: 'text-green-500',
     warning: 'text-yellow-500',
-    error: 'text-red-500',
+    error: 'text-primal-red',
   };
 
   return (
@@ -114,7 +114,11 @@ function MetricCard({
   );
 }
 
-function AttemptRow({ attempt, isExpanded, onToggle }: {
+function AttemptRow({
+  attempt,
+  isExpanded,
+  onToggle,
+}: {
   attempt: AttemptMetrics;
   isExpanded: boolean;
   onToggle: () => void;
@@ -145,13 +149,11 @@ function AttemptRow({ attempt, isExpanded, onToggle }: {
         ) : (
           <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
-        
+
         {attempt.success === true && (
           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
         )}
-        {attempt.success === false && (
-          <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-        )}
+        {attempt.success === false && <XCircle className="h-4 w-4 text-primal-red flex-shrink-0" />}
         {attempt.success === undefined && (
           <Play className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
@@ -165,21 +167,13 @@ function AttemptRow({ attempt, isExpanded, onToggle }: {
               </Badge>
             )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {formatDate(attempt.startTime)}
-          </div>
+          <div className="text-xs text-muted-foreground">{formatDate(attempt.startTime)}</div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          {attempt.durationMs !== undefined && (
-            <span>{formatDuration(attempt.durationMs)}</span>
-          )}
-          {attempt.totalTokens > 0 && (
-            <span>{formatTokens(attempt.totalTokens)} tokens</span>
-          )}
-          {attempt.cost > 0 && (
-            <span>{formatCost(attempt.cost)}</span>
-          )}
+          {attempt.durationMs !== undefined && <span>{formatDuration(attempt.durationMs)}</span>}
+          {attempt.totalTokens > 0 && <span>{formatTokens(attempt.totalTokens)} tokens</span>}
+          {attempt.cost > 0 && <span>{formatCost(attempt.cost)}</span>}
         </div>
       </button>
 
@@ -210,15 +204,17 @@ function AttemptRow({ attempt, isExpanded, onToggle }: {
             <div className="text-sm">
               <span className="text-muted-foreground">Duration:</span>{' '}
               <span className="font-mono">{formatDuration(attempt.durationMs)}</span>
-              <span className="text-muted-foreground ml-2">({attempt.durationMs.toLocaleString()}ms)</span>
+              <span className="text-muted-foreground ml-2">
+                ({attempt.durationMs.toLocaleString()}ms)
+              </span>
             </div>
           )}
 
           {/* Error message */}
           {attempt.error && (
-            <div className="flex items-start gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-sm">
-              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <span className="text-red-400">{attempt.error}</span>
+            <div className="flex items-start gap-2 p-2 bg-primal-red/10 border border-primal-red/20 rounded text-sm">
+              <AlertTriangle className="h-4 w-4 text-primal-red flex-shrink-0 mt-0.5" />
+              <span className="text-primal-red">{attempt.error}</span>
             </div>
           )}
 
@@ -241,7 +237,7 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const toggleAttempt = (attemptId: string) => {
-    setExpandedAttempts(prev => {
+    setExpandedAttempts((prev) => {
       const next = new Set(prev);
       if (next.has(attemptId)) {
         next.delete(attemptId);
@@ -260,10 +256,9 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
 
   // Compute subtask metrics
   const subtaskTotal = task.subtasks?.length ?? 0;
-  const subtaskCompleted = task.subtasks?.filter(s => s.completed).length ?? 0;
+  const subtaskCompleted = task.subtasks?.filter((s) => s.completed).length ?? 0;
   const subtaskVariant: 'default' | 'success' | 'warning' =
-    subtaskTotal === 0 ? 'default' :
-    subtaskCompleted === subtaskTotal ? 'success' : 'warning';
+    subtaskTotal === 0 ? 'default' : subtaskCompleted === subtaskTotal ? 'success' : 'warning';
 
   const hasAgentData = metrics && metrics.totalRuns > 0;
 
@@ -279,18 +274,26 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
           <MetricCard
             icon={Clock}
             label="Time Tracked"
-            value={task.timeTracking && task.timeTracking.totalSeconds > 0
-              ? formatTrackedTime(task.timeTracking.totalSeconds)
-              : '—'}
-            subValue={task.timeTracking
-              ? `${task.timeTracking.entries.length} ${task.timeTracking.entries.length === 1 ? 'entry' : 'entries'}${task.timeTracking.isRunning ? ' (running)' : ''}`
-              : 'No time tracked'}
+            value={
+              task.timeTracking && task.timeTracking.totalSeconds > 0
+                ? formatTrackedTime(task.timeTracking.totalSeconds)
+                : '—'
+            }
+            subValue={
+              task.timeTracking
+                ? `${task.timeTracking.entries.length} ${task.timeTracking.entries.length === 1 ? 'entry' : 'entries'}${task.timeTracking.isRunning ? ' (running)' : ''}`
+                : 'No time tracked'
+            }
           />
           <MetricCard
             icon={Calendar}
             label="Task Age"
             value={formatAge(task.created)}
-            subValue={new Date(task.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            subValue={new Date(task.created).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
           />
           {task.status === 'done' ? (
             <MetricCard
@@ -308,25 +311,19 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
               subValue={`Since ${new Date(task.updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
             />
           )}
-          <MetricCard
-            icon={MessageSquare}
-            label="Comments"
-            value={task.comments?.length ?? 0}
-          />
+          <MetricCard icon={MessageSquare} label="Comments" value={task.comments?.length ?? 0} />
           <MetricCard
             icon={ListChecks}
             label="Subtasks"
             value={subtaskTotal > 0 ? `${subtaskCompleted}/${subtaskTotal}` : '—'}
-            subValue={subtaskTotal > 0
-              ? `${Math.round((subtaskCompleted / subtaskTotal) * 100)}% complete`
-              : 'None'}
+            subValue={
+              subtaskTotal > 0
+                ? `${Math.round((subtaskCompleted / subtaskTotal) * 100)}% complete`
+                : 'None'
+            }
             variant={subtaskVariant}
           />
-          <MetricCard
-            icon={Paperclip}
-            label="Attachments"
-            value={task.attachments?.length ?? 0}
-          />
+          <MetricCard icon={Paperclip} label="Attachments" value={task.attachments?.length ?? 0} />
         </div>
       </div>
 
@@ -346,9 +343,9 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
-          <span className="text-red-400">Failed to load agent run metrics</span>
+        <div className="flex items-center gap-2 p-4 bg-primal-red/10 border border-primal-red/20 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-primal-red" />
+          <span className="text-primal-red">Failed to load agent run metrics</span>
         </div>
       )}
 
@@ -360,11 +357,7 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
               <Bot className="h-4 w-4" />
               Agent Run History
             </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExportDialogOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -390,8 +383,11 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
               label="Success Rate"
               value={`${(metrics.successRate * 100).toFixed(0)}%`}
               variant={
-                metrics.successRate >= 0.8 ? 'success' :
-                metrics.successRate >= 0.5 ? 'warning' : 'error'
+                metrics.successRate >= 0.8
+                  ? 'success'
+                  : metrics.successRate >= 0.5
+                    ? 'warning'
+                    : 'error'
               }
             />
             <MetricCard
@@ -414,7 +410,11 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
               icon={Coins}
               label="Estimated Cost"
               value={formatCost(metrics.totalCost)}
-              subValue={metrics.totalCacheTokens > 0 ? `${formatTokens(metrics.totalCacheTokens)} cached` : undefined}
+              subValue={
+                metrics.totalCacheTokens > 0
+                  ? `${formatTokens(metrics.totalCacheTokens)} cached`
+                  : undefined
+              }
             />
           </div>
 
@@ -427,7 +427,10 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
               </h3>
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                 {metrics.lastRun.success === true && (
-                  <Badge variant="default" className="bg-green-500/20 text-green-500 border-green-500/30">
+                  <Badge
+                    variant="default"
+                    className="bg-green-500/20 text-green-500 border-green-500/30"
+                  >
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Success
                   </Badge>
@@ -467,16 +470,18 @@ export function TaskMetricsPanel({ task }: TaskMetricsPanelProps) {
                       if (expandedAttempts.size === metrics.attempts.length) {
                         setExpandedAttempts(new Set());
                       } else {
-                        setExpandedAttempts(new Set(metrics.attempts.map(a => a.attemptId)));
+                        setExpandedAttempts(new Set(metrics.attempts.map((a) => a.attemptId)));
                       }
                     }}
                   >
-                    {expandedAttempts.size === metrics.attempts.length ? 'Collapse All' : 'Expand All'}
+                    {expandedAttempts.size === metrics.attempts.length
+                      ? 'Collapse All'
+                      : 'Expand All'}
                   </Button>
                 )}
               </div>
               <div className="space-y-2">
-                {metrics.attempts.map(attempt => (
+                {metrics.attempts.map((attempt) => (
                   <AttemptRow
                     key={attempt.attemptId}
                     attempt={attempt}

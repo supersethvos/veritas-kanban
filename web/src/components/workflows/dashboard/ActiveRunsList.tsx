@@ -37,7 +37,7 @@ const ActiveRunCard = memo(function ActiveRunCard({ run, onClick }: ActiveRunCar
 
   return (
     <div
-      className="p-4 rounded-lg border-2 border-blue-500 bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+      className="p-4 rounded-lg border-2 border-primal-gold bg-card hover:bg-accent/50 transition-colors cursor-pointer"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -54,7 +54,7 @@ const ActiveRunCard = memo(function ActiveRunCard({ run, onClick }: ActiveRunCar
             <Badge variant="outline" className="text-xs font-mono">
               {run.id}
             </Badge>
-            <Badge className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            <Badge className="text-xs bg-primal-gold/20 text-primal-gold dark:bg-primal-gold/20 dark:text-primal-gold">
               <PlayCircle className="h-3 w-3 mr-1" />
               Running
             </Badge>
@@ -74,7 +74,7 @@ const ActiveRunCard = memo(function ActiveRunCard({ run, onClick }: ActiveRunCar
             </div>
             <div className="flex-1 max-w-xs h-2 bg-secondary rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-500 transition-all"
+                className="h-full bg-primal-gold transition-all"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               />
             </div>

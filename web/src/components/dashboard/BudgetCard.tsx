@@ -2,14 +2,7 @@ import { useBudgetMetrics, formatBudgetTokens, formatCurrency } from '@/hooks/us
 import { useFeatureSettings } from '@/hooks/useFeatureSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { 
-  Wallet, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle,
-  XCircle,
-  Coins,
-} from 'lucide-react';
+import { Wallet, TrendingUp, AlertTriangle, CheckCircle, XCircle, Coins } from 'lucide-react';
 
 interface BudgetCardProps {
   project?: string;
@@ -25,7 +18,7 @@ interface ProgressBarProps {
 
 function ProgressBar({ value, projected, warningThreshold, label, subLabel }: ProgressBarProps) {
   const getColor = (pct: number) => {
-    if (pct >= 100) return 'bg-red-500';
+    if (pct >= 100) return 'bg-primal-red';
     if (pct >= warningThreshold) return 'bg-yellow-500';
     if (pct >= 60) return 'bg-yellow-400';
     return 'bg-green-500';
@@ -38,11 +31,13 @@ function ProgressBar({ value, projected, warningThreshold, label, subLabel }: Pr
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className={cn(
-          'font-medium',
-          value >= 100 && 'text-red-500',
-          value >= warningThreshold && value < 100 && 'text-yellow-500',
-        )}>
+        <span
+          className={cn(
+            'font-medium',
+            value >= 100 && 'text-primal-red',
+            value >= warningThreshold && value < 100 && 'text-yellow-500'
+          )}
+        >
           {value.toFixed(1)}%
           {subLabel && <span className="text-xs text-muted-foreground ml-1">({subLabel})</span>}
         </span>
@@ -50,18 +45,18 @@ function ProgressBar({ value, projected, warningThreshold, label, subLabel }: Pr
       <div className="h-2 bg-muted rounded-full overflow-hidden relative">
         {/* Projected line (dashed marker) */}
         {cappedProjected !== undefined && cappedProjected > cappedValue && (
-          <div 
+          <div
             className="absolute top-0 h-full w-0.5 bg-foreground/30 z-10"
             style={{ left: `${cappedProjected}%` }}
           />
         )}
         {/* Warning threshold marker */}
-        <div 
+        <div
           className="absolute top-0 h-full w-px bg-yellow-500/50"
           style={{ left: `${warningThreshold}%` }}
         />
         {/* Actual progress */}
-        <div 
+        <div
           className={cn('h-full transition-all duration-500', getColor(value))}
           style={{ width: `${cappedValue}%` }}
         />
@@ -73,7 +68,7 @@ function ProgressBar({ value, projected, warningThreshold, label, subLabel }: Pr
 export function BudgetCard({ project }: BudgetCardProps) {
   const { settings } = useFeatureSettings();
   const { data: metrics, isLoading, error } = useBudgetMetrics(project);
-  
+
   // Don't render if budget tracking is disabled
   if (!settings.budget.enabled) {
     return null;
@@ -115,23 +110,26 @@ export function BudgetCard({ project }: BudgetCardProps) {
     return null;
   }
 
-  const StatusIcon = metrics.status === 'danger' 
-    ? AlertTriangle 
-    : metrics.status === 'warning' 
-      ? AlertTriangle 
-      : CheckCircle;
+  const StatusIcon =
+    metrics.status === 'danger'
+      ? AlertTriangle
+      : metrics.status === 'warning'
+        ? AlertTriangle
+        : CheckCircle;
 
-  const statusColor = metrics.status === 'danger'
-    ? 'text-red-500'
-    : metrics.status === 'warning'
-      ? 'text-yellow-500'
-      : 'text-green-500';
+  const statusColor =
+    metrics.status === 'danger'
+      ? 'text-primal-red'
+      : metrics.status === 'warning'
+        ? 'text-yellow-500'
+        : 'text-green-500';
 
-  const statusBg = metrics.status === 'danger'
-    ? 'bg-red-500/10 border-red-500/20'
-    : metrics.status === 'warning'
-      ? 'bg-yellow-500/10 border-yellow-500/20'
-      : 'bg-green-500/10 border-green-500/20';
+  const statusBg =
+    metrics.status === 'danger'
+      ? 'bg-primal-red/10 border-primal-red/20'
+      : metrics.status === 'warning'
+        ? 'bg-yellow-500/10 border-yellow-500/20'
+        : 'bg-green-500/10 border-green-500/20';
 
   return (
     <div className={cn('rounded-lg border p-4 space-y-4', statusBg)}>
@@ -208,38 +206,42 @@ export function BudgetCard({ project }: BudgetCardProps) {
                 </div>
               )}
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground">
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span className="text-xs">Projected</span>
               </div>
-              <div className={cn(
-                'font-semibold text-sm mt-0.5',
-                metrics.projectedTokenOverage > 100 && 'text-red-500',
-                metrics.projectedTokenOverage > settings.budget.warningThreshold && metrics.projectedTokenOverage <= 100 && 'text-yellow-500',
-              )}>
+              <div
+                className={cn(
+                  'font-semibold text-sm mt-0.5',
+                  metrics.projectedTokenOverage > 100 && 'text-primal-red',
+                  metrics.projectedTokenOverage > settings.budget.warningThreshold &&
+                    metrics.projectedTokenOverage <= 100 &&
+                    'text-yellow-500'
+                )}
+              >
                 {formatBudgetTokens(metrics.projectedMonthlyTokens)}
               </div>
               {metrics.projectedMonthlyCost > 0 && (
-                <div className={cn(
-                  'text-xs',
-                  metrics.projectedCostOverage > 100 ? 'text-red-500' : 'text-muted-foreground',
-                )}>
+                <div
+                  className={cn(
+                    'text-xs',
+                    metrics.projectedCostOverage > 100 ? 'text-primal-red' : 'text-muted-foreground'
+                  )}
+                >
                   {formatCurrency(metrics.projectedMonthlyCost)}
                 </div>
               )}
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground">
                 <Wallet className="h-3.5 w-3.5" />
                 <span className="text-xs">Budget</span>
               </div>
               <div className="font-semibold text-sm mt-0.5">
-                {metrics.tokenBudget > 0 
-                  ? formatBudgetTokens(metrics.tokenBudget) 
-                  : '—'}
+                {metrics.tokenBudget > 0 ? formatBudgetTokens(metrics.tokenBudget) : '—'}
               </div>
               {metrics.costBudget > 0 && (
                 <div className="text-xs text-muted-foreground">
@@ -251,18 +253,21 @@ export function BudgetCard({ project }: BudgetCardProps) {
 
           {/* Projected overage warning */}
           {(metrics.projectedTokenOverage > 100 || metrics.projectedCostOverage > 100) && (
-            <div className="flex items-start gap-2 p-2 rounded bg-red-500/10 text-red-500 text-xs">
+            <div className="flex items-start gap-2 p-2 rounded bg-primal-red/10 text-primal-red text-xs">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <div>
                 <span className="font-medium">Projected to exceed budget</span>
                 {metrics.projectedTokenOverage > 100 && metrics.tokenBudget > 0 && (
                   <div>
-                    Tokens: {formatBudgetTokens(metrics.projectedMonthlyTokens - metrics.tokenBudget)} over budget
+                    Tokens:{' '}
+                    {formatBudgetTokens(metrics.projectedMonthlyTokens - metrics.tokenBudget)} over
+                    budget
                   </div>
                 )}
                 {metrics.projectedCostOverage > 100 && metrics.costBudget > 0 && (
                   <div>
-                    Cost: {formatCurrency(metrics.projectedMonthlyCost - metrics.costBudget)} over budget
+                    Cost: {formatCurrency(metrics.projectedMonthlyCost - metrics.costBudget)} over
+                    budget
                   </div>
                 )}
               </div>

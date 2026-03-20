@@ -1,7 +1,7 @@
 import { memo, useState, useMemo, useCallback } from 'react';
 import { useFileDiff } from '@/hooks/useDiff';
 import { DiffHunkView } from './DiffHunk';
-import { 
+import {
   FileCode,
   FilePlus,
   FileMinus,
@@ -17,8 +17,8 @@ import { nanoid } from 'nanoid';
 const statusIcons: Record<FileChange['status'], React.ReactNode> = {
   added: <FilePlus className="h-4 w-4 text-green-500" />,
   modified: <FileEdit className="h-4 w-4 text-amber-500" />,
-  deleted: <FileMinus className="h-4 w-4 text-red-500" />,
-  renamed: <FileCode className="h-4 w-4 text-blue-500" />,
+  deleted: <FileMinus className="h-4 w-4 text-primal-red" />,
+  renamed: <FileCode className="h-4 w-4 text-primal-gold" />,
 };
 
 interface FileDiffViewProps {
@@ -40,24 +40,27 @@ export const FileDiffView = memo(function FileDiffView({
   const [addingCommentAtLine, setAddingCommentAtLine] = useState<number | null>(null);
 
   const fileComments = useMemo(
-    () => comments.filter(c => c.file === filePath),
+    () => comments.filter((c) => c.file === filePath),
     [comments, filePath]
   );
 
-  const handleSubmitComment = useCallback((content: string) => {
-    if (addingCommentAtLine === null) return;
-    
-    const comment: ReviewComment = {
-      id: `comment_${nanoid(8)}`,
-      file: filePath,
-      line: addingCommentAtLine,
-      content,
-      created: new Date().toISOString(),
-    };
-    
-    onAddComment(comment);
-    setAddingCommentAtLine(null);
-  }, [addingCommentAtLine, filePath, onAddComment]);
+  const handleSubmitComment = useCallback(
+    (content: string) => {
+      if (addingCommentAtLine === null) return;
+
+      const comment: ReviewComment = {
+        id: `comment_${nanoid(8)}`,
+        file: filePath,
+        line: addingCommentAtLine,
+        content,
+        created: new Date().toISOString(),
+      };
+
+      onAddComment(comment);
+      setAddingCommentAtLine(null);
+    },
+    [addingCommentAtLine, filePath, onAddComment]
+  );
 
   const handleCancelComment = useCallback(() => setAddingCommentAtLine(null), []);
 
@@ -102,10 +105,10 @@ export const FileDiffView = memo(function FileDiffView({
             </span>
           )}
           <span className="text-green-500">+{diff.additions}</span>
-          <span className="text-red-500">-{diff.deletions}</span>
+          <span className="text-primal-red">-{diff.deletions}</span>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         {diff.hunks.map((hunk, idx) => (
           <DiffHunkView

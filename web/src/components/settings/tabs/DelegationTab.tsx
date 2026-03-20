@@ -149,7 +149,7 @@ export function DelegationTab() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium flex items-center gap-2">
-          <Plane className="h-5 w-5 text-blue-500" />
+          <Plane className="h-5 w-5 text-primal-gold" />
           Approval Delegation (Vacation Mode)
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
@@ -159,13 +159,13 @@ export function DelegationTab() {
 
       {/* Active Delegation Banner */}
       {isActive && !hasExpired && delegation && (
-        <div className="border-2 border-blue-500 bg-blue-50 dark:bg-blue-950 rounded-lg p-4">
+        <div className="border-2 border-primal-gold bg-primal-gold/5 dark:bg-primal-gold/10 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <ShieldCheck className="h-5 w-5 text-primal-gold" />
               <span className="font-semibold text-base">Delegation Active</span>
             </div>
-            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900">
+            <span className="px-2 py-1 text-xs rounded-full bg-primal-gold/20 dark:bg-primal-gold/20">
               Active
             </span>
           </div>

@@ -47,9 +47,61 @@ const WorkflowsPage = lazy(() =>
   }))
 );
 
-/** Renders the current view (board, activity feed, or backlog). */
+const CockpitView = lazy(() => import('./components/cockpit/CockpitView'));
+
+const FounderSurfaceView = lazy(() =>
+  import('./components/founder-surface/FounderSurfaceView').then((mod) => ({
+    default: mod.default,
+  }))
+);
+
+const FounderBoardView = lazy(() => import('./components/founder-board/FounderBoardView'));
+
+/** Renders the current view (cockpit, board, activity feed, or backlog). */
 function MainContent() {
   const { view, setView, navigateToTask } = useView();
+
+  if (view === 'founder-board') {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16">
+            <span className="text-muted-foreground">Loading founder board…</span>
+          </div>
+        }
+      >
+        <FounderBoardView />
+      </Suspense>
+    );
+  }
+
+  if (view === 'cockpit') {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16">
+            <span className="text-muted-foreground">Loading cockpit…</span>
+          </div>
+        }
+      >
+        <CockpitView />
+      </Suspense>
+    );
+  }
+
+  if (view === 'autonomy') {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16">
+            <span className="text-muted-foreground">Loading autonomy…</span>
+          </div>
+        }
+      >
+        <FounderSurfaceView />
+      </Suspense>
+    );
+  }
 
   if (view === 'activity') {
     return (

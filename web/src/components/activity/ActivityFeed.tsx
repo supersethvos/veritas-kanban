@@ -21,13 +21,13 @@ import { cn } from '@/lib/utils';
 function getColumnColor(status: string): string {
   switch (status) {
     case 'todo':
-      return 'bg-slate-500';
+      return 'bg-primal-gray-mid';
     case 'in-progress':
-      return 'bg-amber-500';
+      return 'bg-primal-gold';
     case 'blocked':
-      return 'bg-red-500';
+      return 'bg-primal-red';
     case 'done':
-      return 'bg-blue-500';
+      return 'bg-green-500';
     default:
       return 'bg-gray-500';
   }
@@ -102,7 +102,7 @@ function DailySummaryPanel() {
           />
           {summary.errorMs > 0 && (
             <div
-              className="bg-red-500 transition-all"
+              className="bg-primal-red transition-all"
               style={{ width: `${(summary.errorMs / total) * 100}%` }}
             />
           )}
@@ -253,18 +253,18 @@ function StatusHistoryPanel({ onTaskClick }: StatusHistoryPanelProps) {
                 // Color for task title based on entry type and status
                 const titleColor = isTaskStatus
                   ? entry.newStatus === 'done'
-                    ? 'text-blue-500'
+                    ? 'text-green-500'
                     : entry.newStatus === 'in-progress'
-                      ? 'text-amber-500'
+                      ? 'text-primal-gold'
                       : entry.newStatus === 'blocked'
-                        ? 'text-red-500'
-                        : 'text-slate-500'
+                        ? 'text-primal-red'
+                        : 'text-primal-gray-mid'
                   : entry.newStatus === 'working' || entry.newStatus === 'thinking'
                     ? 'text-green-500'
                     : entry.newStatus === 'sub-agent'
-                      ? 'text-purple-500'
+                      ? 'text-primal-gold'
                       : entry.newStatus === 'error'
-                        ? 'text-red-500'
+                        ? 'text-primal-red'
                         : 'text-gray-500';
 
                 return (

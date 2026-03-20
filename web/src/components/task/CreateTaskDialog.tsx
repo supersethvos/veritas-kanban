@@ -169,7 +169,7 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
               {showHelp && (
                 <div className="mb-3 p-3 rounded-md bg-muted/50 border border-muted-foreground/20 text-sm space-y-2">
                   <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <Info className="h-4 w-4 text-primal-gold mt-0.5 flex-shrink-0" />
                     <div className="space-y-1.5">
                       <p className="font-medium text-sm">Using Templates</p>
                       <ul className="space-y-1 text-xs text-muted-foreground">

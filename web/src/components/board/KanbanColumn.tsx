@@ -21,9 +21,9 @@ interface KanbanColumnProps {
 }
 
 const columnColors: Record<TaskStatus, string> = {
-  todo: 'border-t-slate-500',
-  'in-progress': 'border-t-blue-500',
-  blocked: 'border-t-red-500',
+  todo: 'border-t-primal-gray-mid',
+  'in-progress': 'border-t-primal-gold',
+  blocked: 'border-t-primal-red',
   done: 'border-t-green-500',
   cancelled: 'border-t-gray-400',
 };

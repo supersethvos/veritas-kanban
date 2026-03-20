@@ -68,7 +68,7 @@ export function TokensDrillDown({ period, project, from, to }: TokensDrillDownPr
             <div className="text-xs text-muted-foreground">Total Tokens</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-blue-500">
+            <div className="text-2xl font-bold text-primal-gold">
               {formatTokens(metrics.inputTokens)}
             </div>
             <div className="text-xs text-muted-foreground">Input</div>
@@ -186,7 +186,7 @@ function AgentTokenRow({ agent, percentage, isTop }: AgentTokenRowProps) {
           </span>
           <span>
             <span className="text-muted-foreground">In: </span>
-            <span className="text-blue-500">{formatTokens(agent.inputTokens)}</span>
+            <span className="text-primal-gold">{formatTokens(agent.inputTokens)}</span>
           </span>
           <span>
             <span className="text-muted-foreground">Out: </span>

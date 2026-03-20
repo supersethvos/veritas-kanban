@@ -49,9 +49,9 @@ type SortDirection = 'asc' | 'desc';
 
 const categoryIcons: Record<string, React.ReactNode> = {
   reliability: <Trophy className="h-4 w-4 text-yellow-500" />,
-  speed: <Zap className="h-4 w-4 text-blue-500" />,
+  speed: <Zap className="h-4 w-4 text-primal-gold" />,
   cost: <DollarSign className="h-4 w-4 text-green-500" />,
-  efficiency: <Target className="h-4 w-4 text-purple-500" />,
+  efficiency: <Target className="h-4 w-4 text-primal-gold" />,
 };
 
 const categoryLabels: Record<string, string> = {
@@ -328,7 +328,7 @@ export function AgentComparison({ project }: AgentComparisonProps) {
                         <span
                           className={cn(
                             agent.successRate >= 90 && 'text-green-500',
-                            agent.successRate < 70 && 'text-red-500'
+                            agent.successRate < 70 && 'text-primal-red'
                           )}
                         >
                           {agent.successRate}%

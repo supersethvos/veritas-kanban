@@ -245,7 +245,7 @@ export function ConflictResolver({ task, open, onOpenChange }: ConflictResolverP
                       <div className="grid grid-cols-2 gap-4 h-full">
                         {/* Ours */}
                         <div className="flex flex-col border rounded-lg overflow-hidden">
-                          <div className="px-3 py-2 bg-blue-500/10 border-b flex items-center justify-between">
+                          <div className="px-3 py-2 bg-primal-gold/10 border-b flex items-center justify-between">
                             <span className="text-sm font-medium flex items-center gap-2">
                               <ArrowLeft className="h-4 w-4" />
                               Ours (Current)

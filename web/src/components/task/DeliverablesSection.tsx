@@ -33,17 +33,17 @@ interface DeliverablesSectionProps {
 }
 
 const TYPE_COLORS: Record<DeliverableType, string> = {
-  document: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  code: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  document: 'bg-primal-gold/10 text-primal-gold dark:text-primal-gold',
+  code: 'bg-primal-gold/10 text-primal-gold dark:text-primal-gold',
   report: 'bg-green-500/10 text-green-700 dark:text-green-400',
-  artifact: 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  artifact: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
   other: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
 };
 
 const STATUS_COLORS: Record<DeliverableStatus, string> = {
   pending: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
-  attached: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  reviewed: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  attached: 'bg-primal-gold/10 text-primal-gold dark:text-primal-gold',
+  reviewed: 'bg-primal-gold/10 text-primal-gold dark:text-primal-gold',
   accepted: 'bg-green-500/10 text-green-700 dark:text-green-400',
 };
 

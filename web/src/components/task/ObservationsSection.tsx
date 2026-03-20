@@ -50,9 +50,9 @@ function formatRelativeTime(timestamp: string): string {
 }
 
 const TYPE_COLORS: Record<ObservationType, string> = {
-  decision: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  blocker: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  insight: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  decision: 'bg-primal-gold/10 text-primal-gold dark:bg-primal-gold/10 dark:text-primal-gold/70',
+  blocker: 'bg-primal-red/10 text-primal-red dark:bg-primal-red/20 dark:text-primal-red/70',
+  insight: 'bg-primal-gold/10 text-primal-gold dark:bg-primal-gold/10 dark:text-primal-gold/70',
   context: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
 };
 

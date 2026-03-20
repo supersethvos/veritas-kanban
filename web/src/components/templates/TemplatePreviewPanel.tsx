@@ -15,9 +15,9 @@ export function TemplatePreviewPanel({ template }: TemplatePreviewPanelProps) {
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/50';
+        return 'bg-primal-red/20 text-primal-red dark:text-primal-red border-primal-red/50';
       case 'high':
-        return 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/50';
+        return 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/50';
       case 'medium':
         return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/50';
       case 'low':

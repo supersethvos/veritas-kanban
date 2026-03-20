@@ -59,9 +59,9 @@ interface AgentPanelProps {
 
 const attemptStatusIcons: Record<AttemptStatus, React.ReactNode> = {
   pending: <Clock className="h-3 w-3 text-muted-foreground" />,
-  running: <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />,
+  running: <Loader2 className="h-3 w-3 text-primal-gold animate-spin" />,
   complete: <CheckCircle2 className="h-3 w-3 text-green-500" />,
-  failed: <XCircle className="h-3 w-3 text-red-500" />,
+  failed: <XCircle className="h-3 w-3 text-primal-red" />,
 };
 
 export function AgentPanel({ task }: AgentPanelProps) {
@@ -290,7 +290,7 @@ export function AgentPanel({ task }: AgentPanelProps) {
           <div
             ref={outputRef}
             onScroll={handleScroll}
-            className="h-[300px] overflow-y-auto p-3 font-mono text-xs bg-zinc-950 text-zinc-200"
+            className="h-[300px] overflow-y-auto p-3 font-mono text-xs bg-primal-card text-primal-gray-light"
           >
             {outputs.length === 0 ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -303,9 +303,9 @@ export function AgentPanel({ task }: AgentPanelProps) {
                   key={i}
                   className={cn(
                     'whitespace-pre-wrap break-all',
-                    output.type === 'stderr' && 'text-red-400',
+                    output.type === 'stderr' && 'text-primal-red',
                     output.type === 'stdin' &&
-                      'text-blue-400 bg-blue-500/10 px-2 py-1 rounded my-1',
+                      'text-primal-gold bg-primal-gold/10 px-2 py-1 rounded my-1',
                     output.type === 'system' && 'text-yellow-400 italic'
                   )}
                 >
@@ -401,7 +401,7 @@ export function AgentPanel({ task }: AgentPanelProps) {
                 Close
               </Button>
             </div>
-            <div className="h-[200px] overflow-y-auto p-3 font-mono text-xs bg-zinc-950 text-zinc-200">
+            <div className="h-[200px] overflow-y-auto p-3 font-mono text-xs bg-primal-card text-primal-gray-light">
               {isLoadingLog ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

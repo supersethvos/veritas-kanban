@@ -243,7 +243,7 @@ function AddRepoForm({ onClose }: { onClose: () => void }) {
               placeholder="e.g., ~/Projects/rubicon"
               className={cn(
                 pathValid === true && 'border-green-500',
-                pathValid === false && 'border-red-500'
+                pathValid === false && 'border-primal-red'
               )}
             />
             <Button
@@ -257,14 +257,16 @@ function AddRepoForm({ onClose }: { onClose: () => void }) {
               ) : pathValid === true ? (
                 <Check className="h-4 w-4 text-green-500" />
               ) : pathValid === false ? (
-                <X className="h-4 w-4 text-red-500" />
+                <X className="h-4 w-4 text-primal-red" />
               ) : (
                 'Validate'
               )}
             </Button>
           </div>
           {pathValid === false && (
-            <p className="text-xs text-red-500">{validatePath.error?.message || 'Invalid path'}</p>
+            <p className="text-xs text-primal-red">
+              {validatePath.error?.message || 'Invalid path'}
+            </p>
           )}
         </div>
         {branches.length > 0 && (

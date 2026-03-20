@@ -12,7 +12,11 @@ interface DiffViewerProps {
   onRemoveComment: (commentId: string) => void;
 }
 
-export const DiffViewer = memo(function DiffViewer({ task, onAddComment, onRemoveComment }: DiffViewerProps) {
+export const DiffViewer = memo(function DiffViewer({
+  task,
+  onAddComment,
+  onRemoveComment,
+}: DiffViewerProps) {
   const hasWorktree = !!task.git?.worktreePath;
   const { data: summary, isLoading, error } = useDiffSummary(task.id, hasWorktree);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -64,13 +68,11 @@ export const DiffViewer = memo(function DiffViewer({ task, onAddComment, onRemov
         {/* File tree */}
         <div className="w-64 flex-shrink-0 border rounded-md overflow-hidden bg-card">
           <div className="px-3 py-2 border-b bg-muted/50">
-            <div className="text-sm font-medium">
-              Changed Files ({summary.totalFiles})
-            </div>
+            <div className="text-sm font-medium">Changed Files ({summary.totalFiles})</div>
             <div className="text-xs text-muted-foreground">
               <span className="text-green-500">+{summary.totalAdditions}</span>
               {' / '}
-              <span className="text-red-500">-{summary.totalDeletions}</span>
+              <span className="text-primal-red">-{summary.totalDeletions}</span>
               {comments.length > 0 && (
                 <>
                   {' / '}

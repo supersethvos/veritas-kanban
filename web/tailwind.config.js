@@ -47,6 +47,17 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			primal: {
+  				gold: '#C9A84C',
+  				red: '#C0392B',
+  				black: '#080808',
+  				card: '#1A1A1A',
+  				rule: '#333333',
+  				'rule-light': '#2A2A2A',
+  				muted: '#444444',
+  				'gray-mid': '#777777',
+  				'gray-light': '#BBBBBB',
   			}
   		},
   		borderRadius: {

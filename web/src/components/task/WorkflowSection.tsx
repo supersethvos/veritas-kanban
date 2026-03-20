@@ -142,7 +142,9 @@ export function WorkflowSection({ task, open, onOpenChange }: WorkflowSectionPro
                         </Badge>
                         <Badge
                           variant="secondary"
-                          className={run.status === 'running' ? 'bg-blue-100 text-blue-800' : ''}
+                          className={
+                            run.status === 'running' ? 'bg-primal-gold/10 text-primal-gold' : ''
+                          }
                         >
                           {run.status}
                         </Badge>

@@ -38,6 +38,7 @@ export function useTaskSync(): {
     (message: WebSocketMessage) => {
       // Forward chat events to the chat event target
       if (
+        message.type === 'chat:thinking' ||
         message.type === 'chat:delta' ||
         message.type === 'chat:message' ||
         message.type === 'chat:error'

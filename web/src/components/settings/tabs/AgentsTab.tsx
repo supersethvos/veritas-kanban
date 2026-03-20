@@ -772,7 +772,7 @@ function RoutingRuleForm({ rule, agents, existingIds, onSubmit, onCancel }: Rout
               onChange={(e) => setId(e.target.value)}
               placeholder="auto from name"
               disabled={isEditing}
-              className={cn(isDuplicate && 'border-red-500')}
+              className={cn(isDuplicate && 'border-primal-red')}
             />
           </div>
         </div>
@@ -961,10 +961,10 @@ function AgentForm({ agent, existingTypes, onSubmit, onCancel }: AgentFormProps)
               onChange={(e) => setType(e.target.value)}
               placeholder="auto-generated from name"
               disabled={isEditing}
-              className={cn(isDuplicate && 'border-red-500')}
+              className={cn(isDuplicate && 'border-primal-red')}
             />
             {isDuplicate && (
-              <p className="text-xs text-red-500">An agent with this type already exists</p>
+              <p className="text-xs text-primal-red">An agent with this type already exists</p>
             )}
           </div>
         </div>

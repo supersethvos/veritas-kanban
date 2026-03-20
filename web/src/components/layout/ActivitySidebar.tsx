@@ -179,7 +179,7 @@ function DailySummaryCard() {
           />
           {summary.errorMs > 0 && (
             <div
-              className="bg-red-500 transition-all"
+              className="bg-primal-red transition-all"
               style={{ width: `${(summary.errorMs / total) * 100}%` }}
             />
           )}

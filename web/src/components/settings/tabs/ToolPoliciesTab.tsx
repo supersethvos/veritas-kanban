@@ -199,10 +199,10 @@ export function ToolPoliciesTab() {
         </p>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      <div className="bg-primal-gold/5 dark:bg-primal-gold/10 border border-primal-gold/20 dark:border-primal-gold/30 rounded-lg p-4">
         <div className="flex gap-2">
-          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-900 dark:text-blue-100">
+          <Info className="h-5 w-5 text-primal-gold flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-foreground">
             <strong>Default roles:</strong> planner, developer, reviewer, tester, deployer.
             <br />
             Default policies can be edited but not deleted. Custom roles can be created for

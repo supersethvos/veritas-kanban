@@ -424,7 +424,7 @@ export function SettingsDialog({ open, onOpenChange, defaultTab }: SettingsDialo
                 </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-red-400 hover:bg-red-500/10 transition-colors text-left">
+                    <button className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-primal-red hover:bg-primal-red/10 transition-colors text-left">
                       <RotateCcw className="h-3.5 w-3.5 flex-shrink-0" />
                       Reset All
                     </button>

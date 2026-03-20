@@ -10,6 +10,8 @@ import {
   FileText,
   Users,
   Workflow,
+  ShieldCheck,
+  Gauge,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateTaskDialog } from '@/components/task/CreateTaskDialog';
@@ -24,6 +26,7 @@ import { useState, useCallback } from 'react';
 import { useKeyboard } from '@/hooks/useKeyboard';
 import { useView } from '@/contexts/ViewContext';
 import { useBacklogCount } from '@/hooks/useBacklog';
+
 import { useTheme } from '@/hooks/useTheme';
 import { Badge } from '@/components/ui/badge';
 
@@ -38,6 +41,7 @@ export function Header() {
   const { setOpenCreateDialog, setOpenChatPanel } = useKeyboard();
   const { view, setView } = useView();
   const { data: backlogCount = 0 } = useBacklogCount();
+
   const { theme, setTheme } = useTheme();
 
   const openSecuritySettings = useCallback(() => {
@@ -73,6 +77,24 @@ export function Header() {
             <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-1" aria-hidden="true" />
               New Task
+            </Button>
+            <Button
+              variant={view === 'founder-board' ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => setView(view === 'founder-board' ? 'board' : 'founder-board')}
+              aria-label="Founder Board"
+              title="Founder Board"
+            >
+              <Gauge className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant={view === 'autonomy' ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => setView(view === 'autonomy' ? 'board' : 'autonomy')}
+              aria-label="Autonomy (MAYA)"
+              title="Autonomy (MAYA)"
+            >
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant={view === 'activity' ? 'secondary' : 'ghost'}

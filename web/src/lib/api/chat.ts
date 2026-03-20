@@ -48,6 +48,28 @@ export async function sendMessage(input: ChatSendInput): Promise<ChatSendRespons
 }
 
 /**
+ * Save a voice transcript (user + agent) without triggering a gateway call.
+ */
+export interface VoiceTranscriptInput {
+  sessionId?: string;
+  taskId?: string;
+  userText: string;
+  agentText: string;
+}
+
+export async function saveVoiceTranscript(
+  input: VoiceTranscriptInput
+): Promise<{ sessionId: string; userMessageId: string; agentMessageId: string }> {
+  const response = await fetch(`${API_BASE}/chat/voice-transcript`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+  return handleResponse(response);
+}
+
+/**
  * Delete a chat session
  */
 export async function deleteSession(sessionId: string): Promise<void> {
@@ -105,6 +127,7 @@ export const chatApi = {
   listSessions,
   getSession,
   sendMessage,
+  saveVoiceTranscript,
   deleteSession,
   sendSquadMessage,
   getSquadMessages,

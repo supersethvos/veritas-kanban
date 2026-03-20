@@ -1,11 +1,5 @@
 import { memo, useMemo } from 'react';
-import { 
-  FileCode,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  MessageSquare,
-} from 'lucide-react';
+import { FileCode, FilePlus, FileMinus, FileEdit, MessageSquare } from 'lucide-react';
 import type { FileChange } from '@/lib/api';
 import type { ReviewComment } from '@veritas-kanban/shared';
 import { cn } from '@/lib/utils';
@@ -13,8 +7,8 @@ import { cn } from '@/lib/utils';
 const statusIcons: Record<FileChange['status'], React.ReactNode> = {
   added: <FilePlus className="h-4 w-4 text-green-500" />,
   modified: <FileEdit className="h-4 w-4 text-amber-500" />,
-  deleted: <FileMinus className="h-4 w-4 text-red-500" />,
-  renamed: <FileCode className="h-4 w-4 text-blue-500" />,
+  deleted: <FileMinus className="h-4 w-4 text-primal-red" />,
+  renamed: <FileCode className="h-4 w-4 text-primal-gold" />,
 };
 
 interface FileTreeProps {
@@ -24,11 +18,23 @@ interface FileTreeProps {
   comments: ReviewComment[];
 }
 
-export const FileTree = memo(function FileTree({ files, selectedFile, onSelectFile, comments }: FileTreeProps) {
-  const commentsByFile = useMemo(() => comments.reduce((acc, c) => {
-    acc[c.file] = (acc[c.file] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>), [comments]);
+export const FileTree = memo(function FileTree({
+  files,
+  selectedFile,
+  onSelectFile,
+  comments,
+}: FileTreeProps) {
+  const commentsByFile = useMemo(
+    () =>
+      comments.reduce(
+        (acc, c) => {
+          acc[c.file] = (acc[c.file] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+    [comments]
+  );
 
   return (
     <div className="space-y-1">
@@ -51,12 +57,8 @@ export const FileTree = memo(function FileTree({ files, selectedFile, onSelectFi
                 {commentsByFile[file.path]}
               </span>
             )}
-            {file.additions > 0 && (
-              <span className="text-green-500">+{file.additions}</span>
-            )}
-            {file.deletions > 0 && (
-              <span className="text-red-500">-{file.deletions}</span>
-            )}
+            {file.additions > 0 && <span className="text-green-500">+{file.additions}</span>}
+            {file.deletions > 0 && <span className="text-primal-red">-{file.deletions}</span>}
           </span>
         </button>
       ))}

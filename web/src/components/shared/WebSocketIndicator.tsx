@@ -21,7 +21,7 @@ export function WebSocketIndicator() {
     ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.5)]'
     : isReconnecting
       ? 'bg-yellow-500 shadow-[0_0_4px_rgba(234,179,8,0.5)] animate-pulse'
-      : 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.4)]';
+      : 'bg-primal-red shadow-[0_0_4px_rgba(239,68,68,0.4)]';
 
   // Icon
   const Icon = isConnected ? Wifi : isReconnecting ? RefreshCw : WifiOff;
@@ -29,7 +29,7 @@ export function WebSocketIndicator() {
     ? 'text-green-500'
     : isReconnecting
       ? 'text-yellow-500'
-      : 'text-red-500';
+      : 'text-primal-red';
   const iconClass = isReconnecting ? `${iconColor} animate-spin` : iconColor;
 
   // Label

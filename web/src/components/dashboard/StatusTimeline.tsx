@@ -49,7 +49,7 @@ function TimelineBar({ summary }: { summary: DailySummary }) {
       )}
       {errorPercent > 0 && (
         <div
-          className="bg-red-500 flex items-center justify-center text-xs text-white font-medium transition-all"
+          className="bg-primal-red flex items-center justify-center text-xs text-white font-medium transition-all"
           style={{ width: `${errorPercent}%` }}
           title={`Error: ${formatDurationMs(summary.errorMs)}`}
         >
@@ -130,7 +130,7 @@ export function StatusTimeline({ date }: StatusTimelineProps) {
           <span>Working/Thinking</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-blue-500" />
+          <div className="w-3 h-3 rounded bg-primal-gold" />
           <span>Sub-agent</span>
         </div>
         <div className="flex items-center gap-1">
@@ -138,7 +138,7 @@ export function StatusTimeline({ date }: StatusTimelineProps) {
           <span>Idle</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-red-500" />
+          <div className="w-3 h-3 rounded bg-primal-red" />
           <span>Error</span>
         </div>
       </div>

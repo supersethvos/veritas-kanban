@@ -14,7 +14,7 @@ export function BlueprintPreview({ template }: BlueprintPreviewProps) {
   return (
     <div className="border rounded-md p-3 bg-muted/30">
       <div className="flex items-center gap-2 mb-2">
-        <AlertCircle className="h-4 w-4 text-blue-500" />
+        <AlertCircle className="h-4 w-4 text-primal-gold" />
         <Label className="text-sm font-medium">Blueprint: Multiple Tasks</Label>
       </div>
       <p className="text-xs text-muted-foreground mb-3">

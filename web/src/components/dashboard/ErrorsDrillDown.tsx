@@ -60,7 +60,7 @@ export function ErrorsDrillDown({ period, project, onTaskClick, from, to }: Erro
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <AlertTriangle className="h-4 w-4 text-red-500" />
+        <AlertTriangle className="h-4 w-4 text-primal-red" />
         <span>
           {failedRuns.length} failed run(s) in the {getPeriodLabel(period)}
         </span>
@@ -95,14 +95,14 @@ function FailedRunRow({ run, onTaskClick }: FailedRunRowProps) {
   const content = (
     <div
       className={cn(
-        'rounded-lg border border-red-500/20 bg-red-500/5 p-3',
-        canNavigate && 'hover:bg-red-500/10 transition-colors cursor-pointer'
+        'rounded-lg border border-primal-red/20 bg-primal-red/5 p-3',
+        canNavigate && 'hover:bg-primal-red/10 transition-colors cursor-pointer'
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-primal-red flex-shrink-0" />
             <span className="font-medium truncate">{run.taskId || 'Unknown task'}</span>
             {canNavigate && <ExternalLink className="h-3 w-3 text-muted-foreground" />}
           </div>

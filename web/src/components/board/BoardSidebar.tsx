@@ -406,13 +406,13 @@ export function BoardSidebar({ onTaskClick }: BoardSidebarProps) {
             label="In Progress"
             value={counts?.['in-progress'] || 0}
             icon={<Play className="h-3.5 w-3.5" />}
-            color="text-blue-500"
+            color="text-primal-gold"
           />
           <Counter
             label="Blocked"
             value={counts?.blocked || 0}
             icon={<Ban className="h-3.5 w-3.5" />}
-            color="text-red-500"
+            color="text-primal-red"
           />
           <Counter
             label="Done"

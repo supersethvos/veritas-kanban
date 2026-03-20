@@ -47,7 +47,7 @@ function TrendIndicator({ direction, change }: { direction: TrendDirection; chan
 
   // direction='up' means improvement, which is always green
   const isGood = direction === 'up';
-  const colorClass = isGood ? 'text-green-500' : 'text-red-500';
+  const colorClass = isGood ? 'text-green-500' : 'text-primal-red';
 
   // Arrow direction based on actual value change
   const valueWentUp = change > 0;

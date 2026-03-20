@@ -63,7 +63,9 @@ const docsApi = {
     });
     return handleResponse<void>(resp);
   },
-  search: async (q: string): Promise<Array<{ file: DocFile; matches: Array<{ line: number; text: string }> }>> => {
+  search: async (
+    q: string
+  ): Promise<Array<{ file: DocFile; matches: Array<{ line: number; text: string }> }>> => {
     const resp = await fetch(`${API_BASE}/docs/search?q=${encodeURIComponent(q)}`);
     return handleResponse(resp);
   },
@@ -214,7 +216,9 @@ export function DocsViewer() {
           <div className="space-y-0.5">
             <button
               className={`flex items-center gap-1.5 w-full text-left text-xs px-2 py-1 rounded transition-colors ${
-                !selectedDir ? 'bg-muted text-foreground font-medium' : 'text-muted-foreground hover:bg-muted/50'
+                !selectedDir
+                  ? 'bg-muted text-foreground font-medium'
+                  : 'text-muted-foreground hover:bg-muted/50'
               }`}
               onClick={() => setSelectedDir(undefined)}
             >
@@ -225,7 +229,9 @@ export function DocsViewer() {
               <button
                 key={dir}
                 className={`flex items-center gap-1.5 w-full text-left text-xs px-2 py-1 rounded transition-colors ${
-                  selectedDir === dir ? 'bg-muted text-foreground font-medium' : 'text-muted-foreground hover:bg-muted/50'
+                  selectedDir === dir
+                    ? 'bg-muted text-foreground font-medium'
+                    : 'text-muted-foreground hover:bg-muted/50'
                 }`}
                 onClick={() => setSelectedDir(dir)}
               >
@@ -252,7 +258,10 @@ export function DocsViewer() {
               <button className="text-[10px] text-green-500 hover:underline" onClick={handleCreate}>
                 Create
               </button>
-              <button className="text-[10px] text-muted-foreground hover:underline" onClick={() => setCreating(false)}>
+              <button
+                className="text-[10px] text-muted-foreground hover:underline"
+                onClick={() => setCreating(false)}
+              >
                 Cancel
               </button>
             </div>
@@ -266,7 +275,7 @@ export function DocsViewer() {
               key={file.path}
               className={`flex items-start gap-2 w-full text-left px-2 py-1.5 rounded transition-colors ${
                 selectedPath === file.path
-                  ? 'bg-purple-500/10 text-purple-500'
+                  ? 'bg-primal-gold/10 text-primal-gold'
                   : 'hover:bg-muted/50 text-muted-foreground'
               }`}
               onClick={() => {

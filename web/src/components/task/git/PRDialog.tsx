@@ -85,7 +85,7 @@ export function PRDialog({ task, open, onOpenChange }: PRDialogProps) {
             </Label>
           </div>
           {createPR.error && (
-            <p className="text-sm text-red-500">{(createPR.error as Error).message}</p>
+            <p className="text-sm text-primal-red">{(createPR.error as Error).message}</p>
           )}
         </div>
         <DialogFooter>

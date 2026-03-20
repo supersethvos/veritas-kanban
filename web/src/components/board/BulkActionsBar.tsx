@@ -23,20 +23,20 @@ const STATUS_BUTTONS: { id: TaskStatus; label: string; color: string; activeColo
   {
     id: 'todo',
     label: 'Todo',
-    color: 'border-slate-400 text-slate-600',
-    activeColor: 'bg-slate-500 text-white border-slate-500',
+    color: 'border-primal-gray-mid text-primal-muted',
+    activeColor: 'bg-primal-gray-mid text-white border-primal-gray-mid',
   },
   {
     id: 'in-progress',
     label: 'In Progress',
-    color: 'border-blue-400 text-blue-600',
-    activeColor: 'bg-blue-500 text-white border-blue-500',
+    color: 'border-primal-gold text-primal-gold',
+    activeColor: 'bg-primal-gold text-white border-primal-gold',
   },
   {
     id: 'blocked',
     label: 'Blocked',
-    color: 'border-red-400 text-red-600',
-    activeColor: 'bg-red-500 text-white border-red-500',
+    color: 'border-primal-red text-primal-red',
+    activeColor: 'bg-primal-red text-white border-primal-red',
   },
   {
     id: 'done',

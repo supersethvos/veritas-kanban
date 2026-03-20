@@ -256,7 +256,7 @@ export function MultiAgentPanel({ onTaskClick }: MultiAgentPanelProps) {
           </span>
           {stats.busy > 0 && (
             <span className="flex items-center gap-1">
-              <CircleDot className="w-2.5 h-2.5 text-purple-500" />
+              <CircleDot className="w-2.5 h-2.5 text-primal-gold" />
               {stats.busy} busy
             </span>
           )}

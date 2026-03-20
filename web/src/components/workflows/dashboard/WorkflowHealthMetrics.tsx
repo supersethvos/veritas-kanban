@@ -50,7 +50,7 @@ const WorkflowHealthCard = memo(function WorkflowHealthCard({ stats }: WorkflowH
   const colorClasses = {
     green: 'bg-green-500',
     yellow: 'bg-yellow-500',
-    red: 'bg-red-500',
+    red: 'bg-primal-red',
   };
 
   return (
@@ -74,7 +74,7 @@ const WorkflowHealthCard = memo(function WorkflowHealthCard({ stats }: WorkflowH
             </div>
             <div>
               <p className="text-muted-foreground">Failed</p>
-              <p className="font-medium text-red-600">{stats.failed}</p>
+              <p className="font-medium text-primal-red">{stats.failed}</p>
             </div>
           </div>
 

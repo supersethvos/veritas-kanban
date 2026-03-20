@@ -214,7 +214,7 @@ export function WorkflowRunView({ runId, onBack }: WorkflowRunViewProps) {
     },
     running: {
       icon: PlayCircle,
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      color: 'bg-primal-gold/20 text-primal-gold dark:bg-primal-gold/20 dark:text-primal-gold',
       label: 'Running',
     },
     completed: {
@@ -224,7 +224,7 @@ export function WorkflowRunView({ runId, onBack }: WorkflowRunViewProps) {
     },
     failed: {
       icon: XCircle,
-      color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      color: 'bg-primal-red/20 text-primal-red dark:bg-primal-red/20 dark:text-primal-red',
       label: 'Failed',
     },
     blocked: {
@@ -292,10 +292,10 @@ export function WorkflowRunView({ runId, onBack }: WorkflowRunViewProps) {
               run.status === 'completed'
                 ? 'bg-green-500'
                 : run.status === 'failed'
-                  ? 'bg-red-500'
+                  ? 'bg-primal-red'
                   : run.status === 'blocked'
                     ? 'bg-yellow-500'
-                    : 'bg-blue-500'
+                    : 'bg-primal-gold'
             )}
             style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
           />
@@ -350,8 +350,8 @@ function StepCard({ stepDef, stepRun, index, isExpanded, onToggleExpand }: StepC
     },
     running: {
       icon: PlayCircle,
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      borderColor: 'border-blue-500',
+      color: 'bg-primal-gold/20 text-primal-gold dark:bg-primal-gold/20 dark:text-primal-gold',
+      borderColor: 'border-primal-gold',
     },
     completed: {
       icon: CheckCircle2,
@@ -360,8 +360,8 @@ function StepCard({ stepDef, stepRun, index, isExpanded, onToggleExpand }: StepC
     },
     failed: {
       icon: XCircle,
-      color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      borderColor: 'border-red-500',
+      color: 'bg-primal-red/20 text-primal-red dark:bg-primal-red/20 dark:text-primal-red',
+      borderColor: 'border-primal-red',
     },
     skipped: {
       icon: Pause,

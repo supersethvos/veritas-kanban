@@ -170,7 +170,7 @@ export function DependenciesSection({
                     aria-hidden="true"
                   />
                 ) : (
-                  <Ban className="h-4 w-4 text-red-400 flex-shrink-0" aria-hidden="true" />
+                  <Ban className="h-4 w-4 text-primal-red flex-shrink-0" aria-hidden="true" />
                 )}
                 <span
                   className={cn(

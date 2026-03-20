@@ -93,11 +93,11 @@ export function getStatusColor(status: string): string {
     case 'thinking':
       return 'bg-green-500';
     case 'sub-agent':
-      return 'bg-purple-500';
+      return 'bg-primal-gold';
     case 'idle':
       return 'bg-gray-400';
     case 'error':
-      return 'bg-red-500';
+      return 'bg-primal-red';
     default:
       return 'bg-gray-300';
   }
@@ -112,11 +112,11 @@ export function getStatusTextColor(status: string): string {
     case 'thinking':
       return 'text-green-500';
     case 'sub-agent':
-      return 'text-purple-500';
+      return 'text-primal-gold';
     case 'idle':
       return 'text-gray-500';
     case 'error':
-      return 'text-red-500';
+      return 'text-primal-red';
     default:
       return 'text-gray-400';
   }

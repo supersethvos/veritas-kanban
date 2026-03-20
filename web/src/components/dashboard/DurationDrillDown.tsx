@@ -183,7 +183,7 @@ function AgentDurationRow({ agent, overallAvg, isFastest, isSlowest }: AgentDura
         </div>
         <div className="text-right">
           <span className="text-muted-foreground text-xs block">vs Avg</span>
-          <span className={cn('font-medium', isAboveAvg ? 'text-red-500' : 'text-green-500')}>
+          <span className={cn('font-medium', isAboveAvg ? 'text-primal-red' : 'text-green-500')}>
             {isAboveAvg ? '+' : ''}
             {diffPercent.toFixed(1)}%
           </span>

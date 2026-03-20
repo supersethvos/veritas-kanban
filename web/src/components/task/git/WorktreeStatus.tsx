@@ -93,7 +93,7 @@ export function WorktreeStatus({ task }: WorktreeStatusProps) {
           Create Worktree
         </Button>
         {createWorktree.error && (
-          <p className="text-xs text-red-500 mt-2">{(createWorktree.error as Error).message}</p>
+          <p className="text-xs text-primal-red mt-2">{(createWorktree.error as Error).message}</p>
         )}
       </div>
     );
@@ -115,7 +115,7 @@ export function WorktreeStatus({ task }: WorktreeStatusProps) {
   if (error) {
     return (
       <div className="mt-3 pt-3 border-t">
-        <div className="flex items-center gap-2 text-sm text-red-500">
+        <div className="flex items-center gap-2 text-sm text-primal-red">
           <AlertCircle className="h-4 w-4" />
           {(error as Error).message}
         </div>

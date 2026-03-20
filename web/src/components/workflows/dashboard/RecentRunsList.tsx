@@ -68,7 +68,7 @@ const RecentRunCard = memo(function RecentRunCard({ run, onClick }: RecentRunCar
     },
     running: {
       icon: PlayCircle,
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      color: 'bg-primal-gold/20 text-primal-gold dark:bg-primal-gold/20 dark:text-primal-gold',
       label: 'Running',
     },
     completed: {
@@ -78,7 +78,7 @@ const RecentRunCard = memo(function RecentRunCard({ run, onClick }: RecentRunCar
     },
     failed: {
       icon: XCircle,
-      color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      color: 'bg-primal-red/20 text-primal-red dark:bg-primal-red/20 dark:text-primal-red',
       label: 'Failed',
     },
     blocked: {

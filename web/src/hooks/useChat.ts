@@ -72,6 +72,7 @@ export function useDeleteChatSession() {
  */
 export function useChatStream(sessionId: string | undefined) {
   const [streamingMessage, setStreamingMessage] = useState<Partial<ChatMessage> | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
   const [, setStreamingText] = useState('');
   const queryClient = useQueryClient();
 
@@ -84,7 +85,12 @@ export function useChatStream(sessionId: string | undefined) {
       const msgSessionId = msg.sessionId as string;
       if (msgSessionId !== sessionId) return;
 
+      if (msg.type === 'chat:thinking') {
+        setIsThinking(true);
+      }
+
       if (msg.type === 'chat:delta') {
+        setIsThinking(false);
         const text = msg.text as string;
         setStreamingText((prev) => {
           const newText = prev + text;
@@ -99,12 +105,14 @@ export function useChatStream(sessionId: string | undefined) {
       }
 
       if (msg.type === 'chat:message') {
+        setIsThinking(false);
         setStreamingMessage(null);
         setStreamingText('');
         queryClient.invalidateQueries({ queryKey: ['chat', 'sessions', sessionId] });
       }
 
       if (msg.type === 'chat:error') {
+        setIsThinking(false);
         setStreamingMessage(null);
         setStreamingText('');
         queryClient.invalidateQueries({ queryKey: ['chat', 'sessions', sessionId] });
@@ -116,10 +124,11 @@ export function useChatStream(sessionId: string | undefined) {
       chatEventTarget.removeEventListener('chat', handler);
       setStreamingMessage(null);
       setStreamingText('');
+      setIsThinking(false);
     };
   }, [sessionId, queryClient]);
 
-  return { streamingMessage };
+  return { streamingMessage, isThinking };
 }
 
 /**

@@ -156,7 +156,7 @@ export function PreviewPanel({ task, open, onOpenChange }: PreviewPanelProps) {
           {hasError && !isStarting && (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center max-w-md">
-                <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                <AlertCircle className="h-12 w-12 mx-auto mb-4 text-primal-red" />
                 <h3 className="font-semibold mb-2">Preview Error</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {status && 'error' in status ? status.error : 'An error occurred'}
@@ -181,7 +181,7 @@ export function PreviewPanel({ task, open, onOpenChange }: PreviewPanelProps) {
                     : 'Configure a repository for this task to use preview.'}
                 </p>
                 {startPreview.error && (
-                  <p className="text-sm text-red-500 mb-4">{startPreview.error.message}</p>
+                  <p className="text-sm text-primal-red mb-4">{startPreview.error.message}</p>
                 )}
               </div>
             </div>

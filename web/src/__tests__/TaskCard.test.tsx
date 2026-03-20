@@ -63,7 +63,7 @@ vi.mock('@/contexts/TaskConfigContext', () => ({
         id: 'proj-1',
         label: 'Project One',
         order: 0,
-        color: 'bg-blue-500/20 text-blue-400',
+        color: 'bg-primal-gold/20 text-primal-gold',
         created: '',
         updated: '',
       },
@@ -80,11 +80,11 @@ vi.mock('@/hooks/useTimeTracking', () => ({
 
 vi.mock('@/hooks/useTaskTypes', () => ({
   getTypeIcon: () => () => React.createElement('span', { 'data-testid': 'type-icon' }),
-  getTypeColor: () => 'border-l-violet-500',
+  getTypeColor: () => 'border-l-primal-gold',
 }));
 
 vi.mock('@/hooks/useProjects', () => ({
-  getProjectColor: () => 'bg-blue-500/20 text-blue-400',
+  getProjectColor: () => 'bg-primal-gold/20 text-primal-gold',
   getProjectLabel: () => 'Project One',
 }));
 

@@ -155,10 +155,10 @@ function areTaskCardPropsEqual(prev: TaskCardProps, next: TaskCardProps): boolea
 }
 
 const priorityColors: Record<TaskPriority, string> = {
-  critical: 'bg-purple-500/20 text-purple-400',
-  high: 'bg-red-500/20 text-red-400',
-  medium: 'bg-amber-500/20 text-amber-400',
-  low: 'bg-slate-500/20 text-slate-400',
+  critical: 'bg-primal-red/20 text-primal-red',
+  high: 'bg-primal-gold/20 text-primal-gold',
+  medium: 'bg-primal-gray-mid/20 text-primal-gray-mid',
+  low: 'bg-primal-gray-mid/20 text-primal-gray-mid',
 };
 
 export const TaskCard = memo(function TaskCard({
@@ -297,7 +297,7 @@ export const TaskCard = memo(function TaskCard({
               isCurrentlyDragging && 'opacity-50',
               isSelected && 'ring-2 ring-primary border-primary',
               isAgentRunning &&
-                'ring-2 ring-blue-500/50 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                'ring-2 ring-primal-gold/50 border-primal-gold/50 shadow-[0_0_15px_rgba(212,175,55,0.3)]'
             )}
           >
             <span className="sr-only">Status: {task.status}</span>
@@ -336,7 +336,7 @@ export const TaskCard = memo(function TaskCard({
               {isAgentRunning && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 flex items-center gap-1 animate-pulse">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-primal-gold/20 text-primal-gold flex items-center gap-1 animate-pulse">
                       <span className="sr-only">
                         Agent {agentNames[task.attempt?.agent || ''] || task.attempt?.agent} is
                         actively running on this task
@@ -357,7 +357,7 @@ export const TaskCard = memo(function TaskCard({
               {isBlocked && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 flex items-center gap-1">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-primal-red/20 text-primal-red flex items-center gap-1">
                       <Ban className="h-3 w-3" />
                       Blocked
                     </span>
@@ -383,7 +383,7 @@ export const TaskCard = memo(function TaskCard({
                 return (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 flex items-center gap-1">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-primal-gold/20 text-primal-gold flex items-center gap-1">
                         <Link2 className="h-3 w-3" aria-hidden="true" />
                         {totalDeps}
                       </span>
@@ -439,7 +439,7 @@ export const TaskCard = memo(function TaskCard({
                   return (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 flex items-center gap-1">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 flex items-center gap-1">
                           <BlockedIcon className="h-3 w-3" />
                           {info.shortLabel}
                         </span>
@@ -462,7 +462,7 @@ export const TaskCard = memo(function TaskCard({
                 </span>
               )}
               {boardSettings.showSprintBadges && task.sprint && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 flex items-center gap-1">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-primal-gold/20 text-primal-gold flex items-center gap-1">
                   <Zap className="h-3 w-3" />
                   {getSprintLabel(sprints, task.sprint)}
                 </span>
@@ -596,7 +596,7 @@ export const TaskCard = memo(function TaskCard({
                             'text-xs px-1 py-0.5 rounded flex items-center',
                             cardMetrics.lastRunSuccess
                               ? 'bg-green-500/20 text-green-500'
-                              : 'bg-red-500/20 text-red-500'
+                              : 'bg-primal-red/20 text-primal-red'
                           )}
                         >
                           {cardMetrics.lastRunSuccess ? (

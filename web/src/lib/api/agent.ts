@@ -138,6 +138,12 @@ export const registryApi = {
     return handleResponse<RegisteredAgent[]>(response);
   },
 
+  /** Get the canonical VOS agent roster */
+  known: async (): Promise<RegisteredAgent[]> => {
+    const response = await fetch(`${API_BASE}/agents/register/known`);
+    return handleResponse<RegisteredAgent[]>(response);
+  },
+
   /** Get registry statistics */
   stats: async (): Promise<RegistryStats> => {
     const response = await fetch(`${API_BASE}/agents/register/stats`);

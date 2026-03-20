@@ -213,7 +213,7 @@ export function ManageTab() {
                 </div>
               </div>
             )}
-            newItemDefaults={{ description: '', color: 'bg-blue-500/20' }}
+            newItemDefaults={{ description: '', color: 'bg-primal-gold/20' }}
           />
         </div>
       </div>
@@ -281,7 +281,7 @@ export function ManageTab() {
         {showTemplateHelp && (
           <div className="p-3 rounded-md bg-muted/50 border border-muted-foreground/20 text-sm space-y-3">
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <Info className="h-4 w-4 text-primal-gold mt-0.5 flex-shrink-0" />
               <div className="space-y-2">
                 <p className="font-medium text-sm">Template Guide</p>
                 <div className="text-xs text-muted-foreground space-y-1.5">
